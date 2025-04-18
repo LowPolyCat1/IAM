@@ -13,23 +13,23 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/your_github_username/your_repo_name">
+  <a href="https://github.com/lowpolycat1/IAM">
     <img src="readme-sections/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">your_project_title</h3>
+<h3 align="center">iam</h3>
 
   <p align="center">
-    your_project_description
+    A Identity and Access Management System
     <br />
-    <a href="https://github.com/your_github_username/your_repo_name"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/lowpolycat1/IAM"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/your_github_username/your_repo_name">View Demo</a>
+    <a href="https://github.com/lowpolycat1/IAM">View Demo</a>
     ·
-    <a href="https://github.com/your_github_username/your_repo_name/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/lowpolycat1/IAM/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
-    <a href="https://github.com/your_github_username/your_repo_name/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/lowpolycat1/IAM/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -64,7 +64,7 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-Here's a blank template to get started. To avoid retyping too much info, do a search and replace with your text editor for the following: `your_github_username`, `your_repo_name`, `your_twitter_handle`, `your_linkedin_username`, `your_email_client`, `your_email`, `your_project_title`, `your_project_description`, `your_project_license`
+Here's a blank template to get started. To avoid retyping too much info, do a search and replace with your text editor for the following: `lowpolycat1`, `IAM`, `your_twitter_handle`, `your_linkedin_username`, `your_email_client`, `your_email`, `iam`, `A Identity and Access Management System`, `MIT`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -166,23 +166,23 @@ Don't forget to give the project a star! Thanks again!
 
 ### Top contributors
 
-<a href="https://github.com/your_github_username/your_repo_name/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=your_github_username/your_repo_name" alt="contrib.rocks image" />
+<a href="https://github.com/lowpolycat1/IAM/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=lowpolycat1/IAM" alt="contrib.rocks image" />
 </a>
 
 <!-- LICENSE -->
 ## License
 
-Distributed under the your_project_license. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@your_twitter_handle](https://twitter.com/your_twitter_handle) - <your_email@your_email_client.com>
+lowpolycat1 - [@your_twitter_handle](https://twitter.com/your_twitter_handle) - <your_email@your_email_client.com>
 
-Project Link: [https://github.com/your_github_username/your_repo_name](https://github.com/your_github_username/your_repo_name)
+Project Link: [https://github.com/lowpolycat1/IAM](https://github.com/lowpolycat1/IAM)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -197,16 +197,16 @@ Project Link: [https://github.com/your_github_username/your_repo_name](https://g
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/your_github_username/your_repo_name.svg?style=for-the-badge
-[contributors-url]: https://github.com/your_github_username/your_repo_name/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/your_github_username/your_repo_name.svg?style=for-the-badge
-[forks-url]: https://github.com/your_github_username/your_repo_name/network/members
-[stars-shield]: https://img.shields.io/github/stars/your_github_username/your_repo_name.svg?style=for-the-badge
-[stars-url]: https://github.com/your_github_username/your_repo_name/stargazers
-[issues-shield]: https://img.shields.io/github/issues/your_github_username/your_repo_name.svg?style=for-the-badge
-[issues-url]: https://github.com/your_github_username/your_repo_name/issues
-[license-shield]: https://img.shields.io/github/license/your_github_username/your_repo_name.svg?style=for-the-badge
-[license-url]: https://github.com/your_github_username/your_repo_name/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/lowpolycat1/IAM.svg?style=for-the-badge
+[contributors-url]: https://github.com/lowpolycat1/IAM/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/lowpolycat1/IAM.svg?style=for-the-badge
+[forks-url]: https://github.com/lowpolycat1/IAM/network/members
+[stars-shield]: https://img.shields.io/github/stars/lowpolycat1/IAM.svg?style=for-the-badge
+[stars-url]: https://github.com/lowpolycat1/IAM/stargazers
+[issues-shield]: https://img.shields.io/github/issues/lowpolycat1/IAM.svg?style=for-the-badge
+[issues-url]: https://github.com/lowpolycat1/IAM/issues
+[license-shield]: https://img.shields.io/github/license/lowpolycat1/IAM.svg?style=for-the-badge
+[license-url]: https://github.com/lowpolycat1/IAM/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/your_linkedin_username
 [product-screenshot]: images/screenshot.png
