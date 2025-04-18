@@ -17,6 +17,8 @@ thiserror = { version = "2.0.12" }
 surrealdb = { version = "2.2.2", features = ["kv-mem"] }
 actix-web = { version = "4.10.2" }
 dotenvy = { version = "0.15.7" }
+argon2 = "0.5.3"
+rand_core = "0.9.3"
 
 
 [build-dependencies]

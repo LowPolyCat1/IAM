@@ -1,13 +1,21 @@
-use actix_web::{self, get, App, Responder};
+use crate::database::Database;
+use actix_web::{self, get, post, web, App, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
 use std::{env::var, process::exit};
-use surrealdb::{self, engine::remote::ws::Client, Surreal};
 
 const FALLBACK_IP: &str = "127.0.0.1";
 const FALLBACK_PORT: &str = "8080";
 
+#[derive(Debug, Deserialize, Serialize)]
+struct RegisterRequest {
+    username: String,
+    password: String,
+    email: String,
+}
+
 #[derive(Clone)]
 pub struct AppState {
-    pub db: Surreal<Client>,
+    pub db: Database,
 }
 
 pub async fn start() {
@@ -16,6 +24,9 @@ pub async fn start() {
 
     tracing::info!("Loading env");
     load_dotenv();
+
+    let db = Database::new().await;
+    let app_state = AppState { db: db.clone() };
 
     tracing::info!("Getting IP");
     let server_ip = get_server_ip();
@@ -27,8 +38,13 @@ pub async fn start() {
     let server_port = parse_server_port(&server_port_string);
     tracing::info!("Setting up server");
 
-    let server = match actix_web::HttpServer::new(|| App::new().service(ping))
-        .bind((server_ip, server_port))
+    let server = match actix_web::HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(app_state.clone()))
+            .service(ping)
+            .service(register)
+    })
+    .bind((server_ip, server_port))
     {
         Ok(server) => server,
         Err(error) => {
@@ -97,6 +113,19 @@ fn parse_server_port(server_port_string: &str) -> u16 {
             return FALLBACK_PORT.parse::<u16>().unwrap_or(8080);
         }
     };
+}
+
+#[post("/register")]
+async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+    let db = &data.db;
+    let username = req.username.clone();
+    let password = req.password.clone();
+    let email = req.email.clone();
+
+    match db.register(username, password, email).await {
+        Ok(message) => HttpResponse::Ok().body(message),
+        Err(error) => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+    }
 }
 
 #[get("/ping")]
