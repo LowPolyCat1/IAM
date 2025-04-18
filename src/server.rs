@@ -8,6 +8,8 @@ const FALLBACK_PORT: &str = "8080";
 
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterRequest {
+    firstname: String,
+    lastname: String,
     username: String,
     password: String,
     email: String,
@@ -118,11 +120,16 @@ fn parse_server_port(server_port_string: &str) -> u16 {
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
+    let firstname = req.firstname.clone();
+    let lastname = req.lastname.clone();
     let username = req.username.clone();
     let password = req.password.clone();
     let email = req.email.clone();
 
-    match db.register(username, password, email).await {
+    match db
+        .register(firstname, lastname, username, password, email)
+        .await
+    {
         Ok(message) => HttpResponse::Ok().body(message),
         Err(error) => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
     }
