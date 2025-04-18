@@ -1,18 +1,19 @@
 use argon2::{password_hash, Argon2, PasswordHasher};
 use rand_core::{OsRng, TryRngCore};
 use std::error::Error;
-use surrealdb::{engine::remote::ws::Client, Surreal};
+use surrealdb::{
+    engine::local::{Db, RocksDb},
+    Surreal,
+};
 
 #[derive(Clone)]
 pub struct Database {
-    pub db: Surreal<Client>,
+    pub db: Surreal<Db>,
 }
 
 impl Database {
     pub async fn new() -> Self {
-        let db = Surreal::new::<surrealdb::engine::remote::ws::Ws>("ws://localhost:8000")
-            .await
-            .unwrap();
+        let db = Surreal::new::<RocksDb>("../database").await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
         Database { db }
     }
