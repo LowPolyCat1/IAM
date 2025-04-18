@@ -1,4 +1,6 @@
-fn main() {
-    tracing_subscriber::fmt().init();
-    tracing::info!("Hello, world!");
+use iam::server::start;
+
+#[actix_web::main]
+async fn main() {
+    start().await;
 }

@@ -1,0 +1,105 @@
+use actix_web::{self, get, App, Responder};
+use std::{env::var, process::exit};
+use surrealdb::{self, engine::remote::ws::Client, Surreal};
+
+const FALLBACK_IP: &str = "127.0.0.1";
+const FALLBACK_PORT: &str = "8080";
+
+#[derive(Clone)]
+pub struct AppState {
+    pub db: Surreal<Client>,
+}
+
+pub async fn start() {
+    tracing_subscriber::fmt().init();
+    tracing::info!("Starting Programm!");
+
+    tracing::info!("Loading env");
+    load_dotenv();
+
+    tracing::info!("Getting IP");
+    let server_ip = get_server_ip();
+
+    tracing::info!("Getting Port");
+    let server_port_string = get_server_port_string();
+
+    tracing::info!("Parsing Port");
+    let server_port = parse_server_port(&server_port_string);
+    tracing::info!("Setting up server");
+
+    let server = match actix_web::HttpServer::new(|| App::new().service(ping))
+        .bind((server_ip, server_port))
+    {
+        Ok(server) => server,
+        Err(error) => {
+            tracing::error!("couldn't bind to address: \n{}", error);
+            exit(1);
+        }
+    };
+
+    tracing::info!("Starting server");
+    match server.run().await {
+        Ok(_) => {
+            tracing::info!("Server stopped gently");
+        }
+        Err(error) => {
+            tracing::error!("Server stopped with error | {}", error);
+        }
+    };
+}
+
+fn get_server_ip() -> String {
+    match var("SERVER_IP") {
+        Ok(server_ip) => {
+            tracing::info!("Found SERVER_IP = {}", server_ip);
+            return server_ip;
+        }
+        Err(error) => {
+            tracing::error!("Couldn't find SERVER_IP | {}", error);
+            return FALLBACK_IP.to_string();
+        }
+    };
+}
+
+fn get_server_port_string() -> String {
+    match var("SERVER_PORT") {
+        Ok(server_port) => {
+            tracing::info!("Found SERVER_PORT = {}", server_port);
+            return server_port;
+        }
+        Err(error) => {
+            tracing::error!("Couldn't find SERVER_PORT | {}", error);
+            return FALLBACK_PORT.to_string();
+        }
+    };
+}
+
+fn load_dotenv() {
+    match dotenvy::dotenv() {
+        Ok(pathbuf) => {
+            tracing::info!("loaded .env file: {:?}", pathbuf);
+        }
+        Err(error) => {
+            tracing::error!("Couldn't load env | {}", error);
+        }
+    };
+}
+
+fn parse_server_port(server_port_string: &str) -> u16 {
+    match server_port_string.parse::<u16>() {
+        Ok(port) => {
+            tracing::info!("Successfully parsed port: {}", port);
+            return port;
+        }
+        Err(error) => {
+            tracing::error!("Error parsing port | {}", error);
+            tracing::warn!("using fallback port {}", FALLBACK_PORT);
+            return FALLBACK_PORT.parse::<u16>().unwrap_or(8080);
+        }
+    };
+}
+
+#[get("/ping")]
+async fn ping() -> impl Responder {
+    "pong"
+}
