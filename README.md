@@ -1,4 +1,3 @@
-
 <!-- Thanks to othneildrew for publishing this great template! https://github.com/othneildrew/Best-README-Template/blob/main/BLANK_README.md -->
 
 <a id="readme-top"></a>
@@ -64,66 +63,66 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-Here's a blank template to get started. To avoid retyping too much info, do a search and replace with your text editor for the following: `lowpolycat1`, `IAM`, `your_twitter_handle`, `your_linkedin_username`, `your_email_client`, `your_email`, `iam`, `A Identity and Access Management System`, `MIT`
+IAM is an Identity and Access Management (IAM) system built with Rust. It provides secure authentication, authorization, and user management capabilities.
+
+Key features:
+
+* Secure password handling using Argon2
+* User data encryption with AES-256-GCM or ChaCha20-Poly1305
+* Secure key management using .env files and Docker secrets
+* Secure authentication and logging
+* Rate limiting to prevent brute-force attacks
+* Password reset functionality
+* HTTPS everywhere (TLS) for data in transit
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
 
-* [![Next][Next.js]][Next-url]
-* [![React][React.js]][React-url]
-* [![Vue][Vue.js]][Vue-url]
-* [![Angular][Angular.io]][Angular-url]
-* [![Svelte][Svelte.dev]][Svelte-url]
-* [![Laravel][Laravel.com]][Laravel-url]
-* [![Bootstrap][Bootstrap.com]][Bootstrap-url]
-* [![JQuery][JQuery.com]][JQuery-url]
+[![Rust][Rust-shield]][Rust-url]
+[![Reqwest][Reqwest-shield]][Reqwest-url]
+[![Tokio][Tokio-shield]][Tokio-url]
+[![Serde][Serde-shield]][Serde-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+[Rust-shield]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white
+[Rust-url]: https://www.rust-lang.org/
+[Reqwest-shield]: https://img.shields.io/badge/Reqwest-000000?style=for-the-badge&logo=reqwest&logoColor=white
+[Tokio-shield]: https://img.shields.io/badge/Tokio-000000?style=for-the-badge&logo=tokio&logoColor=white
+[Tokio-url]: https://tokio.rs/
+[Serde-shield]: https://img.shields.io/badge/Serde-000000?style=for-the-badge&logo=serde&logoColor=white
+[Serde-url]: https://serde.rs/
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
 To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-
-* npm
-
-  ```sh
-  npm install npm@latest -g
-  ```
+* Rust
+* Cargo
 
 ### Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. Clone the repo
 
-   ```sh
-   git clone https://github.com/your_github_username/your_repo_name.git
-   ```
+    ```sh
+    git clone https://github.com/lowpolycat1/IAM.git
+    ```
 
-3. Install NPM packages
+2. Build the project
 
-   ```sh
-   npm install
-   ```
+    ```sh
+    cargo build
+    ```
 
-4. Enter your API in `config.js`
+3. Run the project
 
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-
-5. Change git remote url to avoid accidental pushes to base project
-
-   ```sh
-   git remote set-url origin your_github_username/your_repo_name
-   git remote -v # confirm the changes
-   ```
+    ```sh
+    cargo run
+    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -139,12 +138,33 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- ROADMAP -->
 ## Roadmap
 
-* [ ] Feature 1
-* [ ] Feature 2
-* [ ] Feature 3
-  * [ ] Nested Feature
+* [ ] Password Handling
+  * [ ] Hash passwords using Argon2 with UUID as salt and a global pepper from .env.
+  * [ ] Store only the Argon2 password hash (never the plaintext).
+  * [ ] Design for pepper rotation: Track the pepper version with each password hash if needed.
+* [ ] User Data Encryption (First Name, Last Name, Email):
+  * [ ] Combine UUID + ENCRYPTION\_KEY to derive per-user encryption keys.
+  * [ ] Use strong encryption: AES-256-GCM or ChaCha20-Poly1305 for field-level encryption.
+  * [ ] Generate random nonces (IVs) for each encryption operation.
+  * [ ] Store the nonce + ciphertext together in the database.
+* [ ] Secure Key Management:
+  * [ ] Store global secrets (PEPPER, ENCRYPTION\_KEY) in .env file during development and Docker secrets (for production).
+  * [ ] Use dotenvy or similar crate for loading secrets into Rust safely.
+  * [ ] Protect .env files from being committed into Git (use .gitignore).
+* [ ] Authentication and Logging:
+  * [ ] Implement secure logging: Log authentication events (login attempts, password changes) securely.
+  * [ ] Never log passwords or sensitive user data!
+  * [ ] Consider logging hashes of event metadata if needed.
+  * [ ] Include IP address, user agent, timestamp in logs.
+  * [ ] Encrypt or protect log files if they contain sensitive data.
+* [ ] Other Security Features:
+  * [ ] Use rate limiting to prevent brute-force attacks.
+  * [ ] Use UUID v4 (random) for user IDs.
+  * [ ] Support password reset: Email lookup is possible because emails are encrypted but can be decrypted safely.
+  * [ ] Use HTTPS everywhere (TLS) to protect data in transit.
+  * [ ] Use zeroize crate to wipe secrets from memory after use.
 
-See the [open issues](https://github.com/your_github_username/your_repo_name/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -210,19 +230,4 @@ Project Link: [https://github.com/lowpolycat1/IAM](https://github.com/lowpolycat
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/your_linkedin_username
 [product-screenshot]: images/screenshot.png
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
-[Vue.js]: https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D
-[Vue-url]: https://vuejs.org/
-[Angular.io]: https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white
-[Angular-url]: https://angular.io/
-[Svelte.dev]: https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&logo=svelte&logoColor=FF3E00
-[Svelte-url]: https://svelte.dev/
-[Laravel.com]: https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white
-[Laravel-url]: https://laravel.com
-[Bootstrap.com]: https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white
-[Bootstrap-url]: https://getbootstrap.com
-[JQuery.com]: https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white
-[JQuery-url]: https://jquery.com
+[Reqwest-url]: https://docs.rs/reqwest/latest/reqwest/
