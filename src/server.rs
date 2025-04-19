@@ -229,21 +229,20 @@ async fn authenticate_user(
 
     // Authenticate the user
     match db.authenticate_user(email, password).await {
-        Ok(user) => {
+        Ok(_user) => {
             tracing::info!("User authenticated successfully");
-            let response = json!(user).to_string();
-            HttpResponse::Ok().body(response)
+            HttpResponse::Ok().json(json!({"success": true}))
         }
         Err(error) => {
             tracing::error!("Error authenticating user: {}", error);
             match error {
                 crate::errors::custom_errors::CustomError::InvalidPassword => {
-                    HttpResponse::Unauthorized().body(format!("Error: {}", error))
+                    HttpResponse::Ok().json(json!({"success": false}))
                 }
                 crate::errors::custom_errors::CustomError::UserNotFound => {
-                    HttpResponse::NotFound().body(format!("Error: {}", error))
+                    HttpResponse::Ok().json(json!({"success": false}))
                 }
-                _ => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+                _ => HttpResponse::InternalServerError().json(json!({"success": false})),
             }
         }
     }
