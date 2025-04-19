@@ -31,7 +31,7 @@ impl Database {
         email: String,
     ) -> Result<String, Box<dyn Error>> {
         let uuid = Uuid::new_v4().to_string();
-        let key = generate_key(uuid.clone());
+        let key = generate_key();
         let key_bytes: [u8; 32] = key.into();
 
         let encrypted_firstname = encrypt_with_random_nonce(&key_bytes, &firstname);
@@ -82,8 +82,7 @@ impl Database {
 
         match found {
             Ok(mut user) => {
-                let uuid = user[0].clone();
-                let key = generate_key(uuid.clone());
+                let key = generate_key();
                 let key_bytes: [u8; 32] = key.into();
 
                 let encrypted_firstname = user.get(1).map(|s| s.clone()).unwrap_or_default();
@@ -113,7 +112,7 @@ impl Database {
     ) -> Result<Vec<String>, Box<dyn Error>> {
         let email_hash = match hash(&email) {
             Ok(hash) => hash,
-            Err(e) => return Err(e),
+            Err(e) => return Err(From::from(e)),
         };
 
         let found: Result<Vec<String>, surrealdb::Error> = self
@@ -125,8 +124,7 @@ impl Database {
 
         match found {
             Ok(mut user) => {
-                let uuid = user[0].clone();
-                let key = generate_key(uuid.clone());
+                let key = generate_key();
                 let key_bytes: [u8; 32] = key.into();
 
                 let encrypted_firstname = user.get(1).map(|s| s.clone()).unwrap_or_default();
