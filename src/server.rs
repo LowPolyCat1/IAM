@@ -179,7 +179,7 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
     let lastname = req.0.lastname.clone();
     let username = req.0.username.clone();
     let password = req.0.password.clone();
-    let email = req.0.email.clone();
+    let email = req.0.email.clone().to_lowercase();
 
     // Get the database connection from the application state
     let db = &data.db;
@@ -206,7 +206,7 @@ async fn authenticate_user(
     }
 
     // Extract the request body
-    let email = req.0.email.clone();
+    let email = req.0.email.clone().to_lowercase();
     let password = req.0.password.clone();
 
     // Get the database connection from the application state

@@ -84,6 +84,20 @@ impl Database {
         password: String,
         email: String,
     ) -> Result<bool, Box<dyn Error>> {
+        let sql = "SELECT * FROM users WHERE email = $email";
+
+        // Bind the parameters to the query.
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("email".into(), Value::from(email.as_str()));
+
+        // Execute the query.
+        let mut response = self.db.query(sql).bind(vars).await?;
+        let mut users: Vec<User> = response.take(0)?;
+
+        if let Some(_user) = users.pop() {
+            return Err(From::from("User with that already Exists".to_string()));
+        }
+
         // Generate a new UUID for the user.
         let uuid = Uuid::new_v4().to_string();
         // Generate a new encryption key.
