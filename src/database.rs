@@ -47,8 +47,13 @@ impl Database {
         let database_path = var("DATABASE_PATH").unwrap_or("/database".to_string());
         // Connect to the database.
         let db = Surreal::new::<RocksDb>(database_path).await.unwrap();
-        // Use the "test" namespace and database.
-        db.use_ns("test").use_db("test").await.unwrap();
+        // Use the namespace and database from the environment variables.
+        let database_namespace = var("DATABASE_NAMESPACE").unwrap_or("test".to_string());
+        let database_name = var("DATABASE_NAME").unwrap_or("test".to_string());
+        db.use_ns(&database_namespace)
+            .use_db(&database_name)
+            .await
+            .unwrap();
 
         // Define a unique index on the users table.
         let _: Result<Vec<String>, surrealdb::Error> = db
