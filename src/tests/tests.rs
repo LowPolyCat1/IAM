@@ -33,8 +33,7 @@ mod encryption_tests {
         // Set the ENCRYPTION_KEY environment variable for testing
         std::env::set_var("ENCRYPTION_KEY", "test_encryption_key");
 
-        let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
-        let key = generate_key(uuid);
+        let key = generate_key();
         let plaintext = b"This is a secret message.";
 
         let encrypted_data = encrypt(&key, plaintext).unwrap();
@@ -56,23 +55,5 @@ mod encryption_tests {
         let decrypted = decrypt_with_nonce(&key_bytes, &encrypted);
 
         assert_eq!(plaintext, decrypted);
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn test_encryption_decryption() {
-            let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
-            let key = generate_key(uuid);
-            let plaintext = b"This is a secret message.";
-
-            let encrypted_data = encrypt(&key, plaintext).unwrap();
-            let decrypted_plaintext =
-                decrypt(&key, &encrypted_data.ciphertext, &encrypted_data.nonce).unwrap();
-
-            assert_eq!(plaintext, &decrypted_plaintext[..]);
-        }
     }
 }
