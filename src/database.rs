@@ -1,5 +1,5 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
-use crate::hashing::hash;
+use crate::hashing::{hash_random_salt, hash_with_salt};
 
 use dotenvy::var;
 use serde::{Deserialize, Serialize};
@@ -119,12 +119,12 @@ impl Database {
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
         // Hash the password and email.
-        let (password_hash, password_salt) = match hash(&password) {
+        let (password_hash, password_salt) = match hash_random_salt(&password) {
             Ok(result) => result,
             Err(e) => return Err(From::from(e)),
         };
 
-        let (email_hash, email_salt) = match hash(&email) {
+        let (email_hash, email_salt) = match hash_random_salt(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
@@ -175,7 +175,7 @@ impl Database {
     /// A result containing the user's data or an error if the user is not found.
     pub async fn find_user_by_email_hash(&self, email: String) -> Result<User, Box<dyn Error>> {
         // Hash the email.
-        let (email_hash, _) = match hash(&email) {
+        let (email_hash, _) = match hash_random_salt(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
@@ -224,7 +224,7 @@ impl Database {
         password: String,
     ) -> Result<User, Box<dyn Error>> {
         // Hash the email.
-        let (email_hash, _) = match hash(&email) {
+        let (email_hash, _) = match hash_random_salt(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
@@ -247,8 +247,8 @@ impl Database {
         match found {
             Ok(mut users) => {
                 if let Some(user) = users.pop() {
-                    let (combined_password, _) =
-                        hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;
+                    let combined_password = hash_with_salt(&password, &user.password_salt)
+                        .map_err(|e| format!("Error hashing password: {}", e))?;
 
                     if SecretString::new(combined_password)
                         .ct_eq(&SecretString::new(user.password_hash.clone()))
