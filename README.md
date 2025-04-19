@@ -16,10 +16,10 @@
     <img src="readme-sections/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">iam</h3>
+<h3 align="center">iam secure</h3>
 
   <p align="center">
-    A Identity and Access Management System
+    A secure Identity and Access Management System
     <br />
     <a href="https://github.com/lowpolycat1/IAM"><strong>Explore the docs »</strong></a>
     <br />
@@ -68,12 +68,13 @@ This project is purely a demonstration of my technical skills. It showcases my a
 Key features:
 
 * Secure password handling using Argon2
-* User data encryption with AES-256-GCM or ChaCha20-Poly1305
-* Secure key management using .env files and Docker secrets
-* Secure authentication and logging
-* Rate limiting to prevent brute-force attacks
-* Password reset functionality
-* HTTPS everywhere (TLS) for data in transit
+* User data encryption with ChaCha20-Poly1305
+* Salt + Pepper hashing and encryption
+* Secure key management using .env files and Docker (WIP) secrets
+* Secure authentication and logging (WIP)
+* Rate limiting to prevent brute-force attacks (WIP)
+* Password reset functionality  (WIP)
+* HTTPS everywhere (TLS) for data in transit (WIP)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
