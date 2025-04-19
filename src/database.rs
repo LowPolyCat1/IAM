@@ -4,7 +4,6 @@ use crate::hashing::{hash_random_salt, verify_password};
 use dotenvy::var;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::error::Error;
 
 use std::process::exit;
 use surrealdb::{
@@ -83,7 +82,8 @@ impl Database {
         username: String,
         password: String,
         email: String,
-    ) -> Result<bool, Box<dyn Error>> {
+    ) -> Result<bool, crate::errors::custom_errors::CustomError> {
+        tracing::info!("Registering user with email: {}", email);
         let sql = "SELECT * FROM users WHERE email = $email";
 
         // Bind the parameters to the query.
@@ -95,7 +95,8 @@ impl Database {
         let mut users: Vec<User> = response.take(0)?;
 
         if let Some(_user) = users.pop() {
-            return Err(From::from("User with that already Exists".to_string()));
+            tracing::warn!("User with email {} already exists", email);
+            return Err(crate::errors::custom_errors::CustomError::UserAlreadyExists);
         }
 
         // Generate a new UUID for the user.
@@ -112,7 +113,10 @@ impl Database {
         // Hash the password and email.
         let password_hash = match hash_random_salt(&password) {
             Ok(result) => result,
-            Err(e) => return Err(From::from(e)),
+            Err(e) => {
+                tracing::error!("Error hashing password: {}", e);
+                return Err(crate::errors::custom_errors::CustomError::HashingError);
+            }
         };
 
         // Create the SQL query.
@@ -143,8 +147,14 @@ impl Database {
 
         // Return the result.
         match created {
-            Ok(_) => Ok(true),
-            Err(error) => Err(From::from(error)),
+            Ok(_) => {
+                tracing::info!("User registered successfully with email: {}", email);
+                Ok(true)
+            }
+            Err(error) => {
+                tracing::error!("Error creating user: {}", error);
+                Err(crate::errors::custom_errors::CustomError::DatabaseError)
+            }
         }
     }
 
@@ -162,7 +172,8 @@ impl Database {
         &self,
         email: String,
         password: String,
-    ) -> Result<User, Box<dyn Error>> {
+    ) -> Result<User, crate::errors::custom_errors::CustomError> {
+        tracing::info!("Authenticating user with email: {}", email);
         // Hash the email.
 
         // Create the SQL query.
@@ -178,12 +189,15 @@ impl Database {
 
         if let Some(user) = users.pop() {
             if verify_password(&password, &user.password_hash).is_ok() {
+                tracing::info!("User authenticated successfully with email: {}", email);
                 Ok(user)
             } else {
-                Err(From::from("Invalid password".to_string()))
+                tracing::warn!("Invalid password for user with email: {}", email);
+                Err(crate::errors::custom_errors::CustomError::InvalidPassword)
             }
         } else {
-            Err(From::from("User not found".to_string()))
+            tracing::warn!("User not found with email: {}", email);
+            Err(crate::errors::custom_errors::CustomError::UserNotFound)
         }
     }
 }

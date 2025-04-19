@@ -169,8 +169,10 @@ fn parse_server_port(server_port_string: &str) -> u16 {
 /// Registers a new user
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+    tracing::info!("Registering user");
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
         return HttpResponse::BadRequest().json(validation_errors);
     }
 
@@ -189,8 +191,19 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
         .register(firstname, lastname, username, password, email)
         .await
     {
-        Ok(_) => HttpResponse::Ok().body("User registered successfully"),
-        Err(error) => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+        Ok(_) => {
+            tracing::info!("User registered successfully");
+            HttpResponse::Created().body("User registered successfully")
+        }
+        Err(error) => {
+            tracing::error!("Error registering user: {}", error);
+            match error {
+                crate::errors::custom_errors::CustomError::UserAlreadyExists => {
+                    HttpResponse::Conflict().body(format!("Error: {}", error))
+                }
+                _ => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+            }
+        }
     }
 }
 
@@ -200,8 +213,10 @@ async fn authenticate_user(
     req: web::Json<LoginRequest>,
     data: web::Data<AppState>,
 ) -> impl Responder {
+    tracing::info!("Authenticating user");
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
         return HttpResponse::BadRequest().json(validation_errors);
     }
 
@@ -215,10 +230,22 @@ async fn authenticate_user(
     // Authenticate the user
     match db.authenticate_user(email, password).await {
         Ok(user) => {
+            tracing::info!("User authenticated successfully");
             let response = json!(user).to_string();
             HttpResponse::Ok().body(response)
         }
-        Err(error) => HttpResponse::Unauthorized().body(format!("Error: {}", error)),
+        Err(error) => {
+            tracing::error!("Error authenticating user: {}", error);
+            match error {
+                crate::errors::custom_errors::CustomError::InvalidPassword => {
+                    HttpResponse::Unauthorized().body(format!("Error: {}", error))
+                }
+                crate::errors::custom_errors::CustomError::UserNotFound => {
+                    HttpResponse::NotFound().body(format!("Error: {}", error))
+                }
+                _ => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+            }
+        }
     }
 }
 
