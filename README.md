@@ -171,7 +171,7 @@ Don't forget to give the project a star! Thanks again!
 ### Top contributors
 
 <a href="https://github.com/lowpolycat1/IAM/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=lowpolycat1/IAM" alt="contrib.rocks image" />
+  <img src="https://contrib.rocks/image?repo=LowPolyCat1/IAM" alt="contrib.rocks image" />
 </a>
 
 <!-- LICENSE -->
