@@ -136,33 +136,11 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ROADMAP -->
-## Roadmap
+## Implemented features
 
-* [ ] Password Handling
-  * [ ] Hash passwords using Argon2 with UUID as salt and a global pepper from .env.
-  * [ ] Store only the Argon2 password hash (never the plaintext).
-  * [ ] Design for pepper rotation: Track the pepper version with each password hash if needed.
-* [ ] User Data Encryption (First Name, Last Name, Email):
-  * [ ] Combine UUID + ENCRYPTION\_KEY to derive per-user encryption keys.
-  * [ ] Use strong encryption: AES-256-GCM or ChaCha20-Poly1305 for field-level encryption.
-  * [ ] Generate random nonces (IVs) for each encryption operation.
-  * [ ] Store the nonce + ciphertext together in the database.
-* [ ] Secure Key Management:
-  * [ ] Store global secrets (PEPPER, ENCRYPTION\_KEY) in .env file during development and Docker secrets (for production).
-  * [ ] Use dotenvy or similar crate for loading secrets into Rust safely.
-  * [ ] Protect .env files from being committed into Git (use .gitignore).
-* [ ] Authentication and Logging:
-  * [ ] Implement secure logging: Log authentication events (login attempts, password changes) securely.
-  * [ ] Never log passwords or sensitive user data!
-  * [ ] Consider logging hashes of event metadata if needed.
-  * [ ] Include IP address, user agent, timestamp in logs.
-  * [ ] Encrypt or protect log files if they contain sensitive data.
-* [ ] Other Security Features:
-  * [ ] Use rate limiting to prevent brute-force attacks.
-  * [ ] Use UUID v4 (random) for user IDs.
-  * [ ] Support password reset: Email lookup is possible because emails are encrypted but can be decrypted safely.
-  * [ ] Use HTTPS everywhere (TLS) to protect data in transit.
-  * [ ] Use zeroize crate to wipe secrets from memory after use.
+* Actix-web server
+
+* Surrealdb database (as file)
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
@@ -200,20 +178,20 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-lowpolycat1 - [@your_twitter_handle](https://twitter.com/your_twitter_handle) - <your_email@your_email_client.com>
+lowpolycat1
 
 Project Link: [https://github.com/lowpolycat1/IAM](https://github.com/lowpolycat1/IAM)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
+<!-- ## Acknowledgments
 
 * []()
 * []()
-* []()
+* []() -->
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<!-- <p align="right">(<a href="#readme-top">back to top</a>)</p> -->
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
