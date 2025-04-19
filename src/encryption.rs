@@ -3,16 +3,21 @@ use chacha20poly1305::{
     aead::{Aead, Error, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
-use rand::{rng, RngCore};
+use rand::rng;
+use rand::RngCore;
 
 use dotenvy::var;
 
 pub fn generate_key() -> Key {
     let mut key = [0u8; 32];
-    let encryption_key = var("ENCRYPTION_KEY").unwrap_or_else(|_| {
-        tracing::warn!("ENCRYPTION_KEY not set, using default key");
-        "\0".repeat(32)
-    });
+    let encryption_key = match var("ENCRYPTION_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            tracing::error!("couldn't find ENCRYPTION_KEY");
+            tracing::warn!("using fallback for ENCRYPTION_KEY");
+            "ENCRYPTION KEY FALLBACK".to_string()
+        }
+    };
     let encryption_key_bytes = encryption_key.as_bytes();
 
     if encryption_key_bytes.len() != 32 {
@@ -51,8 +56,9 @@ pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, E
 
 fn generate_nonce() -> Nonce {
     let mut nonce = [0u8; 12];
+    // let mut rng = OsRng::new().expect("Failed to get OS random number generator");
     rng().fill_bytes(&mut nonce);
-    *Nonce::from_slice(&nonce) // It is crucial to generate a unique nonce for each encryption operation, even with the same key, to ensure confidentiality.
+    *Nonce::from_slice(&nonce)
 }
 
 /// Encrypts data with a random nonce. Returns base64-encoded string (nonce + ciphertext).
@@ -61,6 +67,7 @@ pub fn encrypt_with_random_nonce(key_bytes: &[u8; 32], plaintext: &str) -> Strin
 
     // Generate random nonce
     let mut nonce_bytes = [0u8; 12];
+    // let mut rng = OsRng::new().expect("Failed to get OS random number generator");
     rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
