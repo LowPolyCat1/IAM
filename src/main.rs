@@ -2,5 +2,5 @@ use iam::server::start;
 
 #[tokio::main]
 async fn main() {
-    start().await;
+    let _ = start().await;
 }

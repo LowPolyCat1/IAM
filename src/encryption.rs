@@ -41,7 +41,7 @@ pub fn generate_key() -> Key {
         }
     }
 
-    Key::from_slice(&key).clone()
+    *Key::from_slice(&key)
 }
 
 pub struct EncryptedData {
@@ -54,7 +54,7 @@ pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionE
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
     let ciphertext = aead
         .encrypt(&nonce, plaintext)
-        .map_err(|e| EncryptionError::EncryptionError)?;
+        .map_err(|_e| EncryptionError::EncryptionError)?;
     Ok(EncryptedData { ciphertext, nonce })
 }
 
@@ -62,7 +62,7 @@ pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, E
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
     let decrypted_data = aead
         .decrypt(nonce, ciphertext)
-        .map_err(|e| EncryptionError::DecryptionError)?;
+        .map_err(|_e| EncryptionError::DecryptionError)?;
     Ok(decrypted_data)
 }
 

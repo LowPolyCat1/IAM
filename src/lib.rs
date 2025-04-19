@@ -1,5 +1,3 @@
-use crate::errors::custom_errors::CustomError;
-
 #[cfg(test)]
 pub mod tests;
 

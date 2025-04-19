@@ -51,10 +51,9 @@ pub fn hash_random_salt(unhashed: &str) -> Result<String, Argon2Error> {
 /// # Returns
 ///
 /// A result indicating whether the password is valid or an error if verification fails.
-
 pub fn verify_password(unhashed: &str, password_hash: &str) -> Result<(), Argon2Error> {
     // Parse the password hash.
-    let parsed_hash = PasswordHash::new(&password_hash)?;
+    let parsed_hash = PasswordHash::new(password_hash)?;
 
     // Verify password against hash using Argon2.
     let is_valid = Argon2::default().verify_password(unhashed.as_bytes(), &parsed_hash);

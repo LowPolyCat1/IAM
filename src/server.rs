@@ -1,9 +1,9 @@
 use crate::database::Database;
 use crate::errors::custom_errors::CustomError;
-use actix_web::{self, get, post, web, App, Error, HttpResponse, Responder};
+use actix_web::{self, get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{env::var, process::exit};
+use std::env::var;
 use tracing_appender::rolling::Rotation;
 use validator::Validate;
 use validator_derive::Validate;
@@ -80,7 +80,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Setting up server");
 
     // Create the Actix Web server
-    let server = actix_web::HttpServer::new(move || {
+    actix_web::HttpServer::new(move || {
         App::new()
             // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))

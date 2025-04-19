@@ -1,4 +1,4 @@
-use crate::encryption::{encrypt_with_random_nonce, generate_key, EncryptionError};
+use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::{hash_random_salt, verify_password};
 
 use dotenvy::var;
@@ -170,9 +170,9 @@ impl Database {
             }
             Err(error) => {
                 tracing::error!("Error creating user: {}", error);
-                return Err(crate::errors::custom_errors::CustomError::DatabaseError(
+                Err(crate::errors::custom_errors::CustomError::DatabaseError(
                     error.to_string(),
-                ));
+                ))
             }
         }
     }
