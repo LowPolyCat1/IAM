@@ -1,8 +1,7 @@
+use base64::{engine::general_purpose, Engine as base64Engine};
 use chacha20poly1305::{
     aead::{Aead, Error, KeyInit},
-    ChaCha20Poly1305,
-    Key,
-    Nonce, // Import the types you need
+    ChaCha20Poly1305, Key, Nonce,
 };
 use rand::{rng, RngCore};
 
@@ -48,6 +47,50 @@ fn generate_nonce() -> Nonce {
     let mut nonce = [0u8; 12];
     rng().fill_bytes(&mut nonce);
     *Nonce::from_slice(&nonce) // It is crucial to generate a unique nonce for each encryption operation, even with the same key, to ensure confidentiality.
+}
+
+/// Encrypts data with a random nonce. Returns base64-encoded string (nonce + ciphertext).
+pub fn encrypt_with_random_nonce(key_bytes: &[u8; 32], plaintext: &str) -> String {
+    let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
+
+    // Generate random nonce
+    let mut nonce_bytes = [0u8; 12];
+    rng().fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    // Encrypt
+    let ciphertext = cipher
+        .encrypt(nonce, plaintext.as_bytes())
+        .expect("encryption failure");
+
+    // Combine nonce + ciphertext
+    let mut combined = Vec::new();
+    combined.extend_from_slice(&nonce_bytes);
+    combined.extend_from_slice(&ciphertext);
+
+    // Encode combined data as Base64 for storage
+    general_purpose::STANDARD.encode(combined)
+}
+
+/// Decrypts base64-encoded (nonce + ciphertext) string.
+pub fn decrypt_with_nonce(key_bytes: &[u8; 32], combined_base64: &str) -> String {
+    let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
+
+    // Decode from Base64
+    let combined = general_purpose::STANDARD
+        .decode(combined_base64)
+        .expect("base64 decode failure");
+
+    // Split into nonce + ciphertext
+    let (nonce_bytes, ciphertext) = combined.split_at(12);
+    let nonce = Nonce::from_slice(nonce_bytes);
+
+    // Decrypt
+    let plaintext_bytes = cipher
+        .decrypt(nonce, ciphertext)
+        .expect("decryption failure");
+
+    String::from_utf8(plaintext_bytes).expect("utf8 decode failure")
 }
 
 #[cfg(test)]
