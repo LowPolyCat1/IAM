@@ -11,7 +11,7 @@ pub fn hash(unhashed: &str) -> Result<(String, String), Box<dyn Error>> {
     let argon2 = Argon2::new(
         argon2::Algorithm::Argon2id,
         argon2::Version::V0x13,
-        argon2::Params::new(4096, 3, 1, None).unwrap(),
+        argon2::Params::default(),
     );
 
     let hashed_password = argon2
