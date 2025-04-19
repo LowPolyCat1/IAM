@@ -2,7 +2,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
 };
-use dotenvy::var;
+
 use sha2::{Digest, Sha256};
 use std::error::Error;
 
