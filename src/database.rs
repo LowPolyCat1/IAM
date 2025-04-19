@@ -1,10 +1,11 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
-use crate::hashing::hash_random_salt;
+use crate::hashing::{hash_random_salt, verify_password};
 
 use dotenvy::var;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
+
 use std::process::exit;
 use surrealdb::{
     engine::local::{Db, RocksDb},
@@ -13,9 +14,9 @@ use surrealdb::{
 };
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
-    pub id: String,
+    pub id: surrealdb::sql::Thing,
     pub encrypted_firstname: String,
     pub encrypted_lastname: String,
     pub username: String,
@@ -198,25 +199,16 @@ impl Database {
         vars.insert("email".into(), Value::from(email.as_str()));
 
         // Execute the query.
-        let found: Result<Vec<User>, surrealdb::Error> = self
-            .db
-            .query(sql)
-            .bind(vars)
-            .await
-            .map(|mut response| response.take(0).unwrap_or_default());
+        let mut response = self.db.query(sql).bind(vars).await?;
+        let mut users: Vec<User> = response.take(0)?;
 
-        match found {
-            Ok(mut users) => {
-                if let Some(user) = users.pop() {
-                    match crate::hashing::verify_password(&password, user.password_hash.as_str()) {
-                        Ok(_) => Ok(user),
-                        Err(_e) => Err(From::from("Invalid password".to_string())),
-                    }
-                } else {
-                    Err(From::from("User not found".to_string()))
-                }
-            }
-            Err(error) => Err(From::from(error)),
+        if let Some(user) = users.pop() {
+            // Extract the id as a string from the Thing object
+
+            // user.password_hash == id;
+            Ok(user)
+        } else {
+            Err(From::from("User not found".to_string()))
         }
     }
 }
