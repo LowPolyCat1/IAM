@@ -1,12 +1,12 @@
 use argon2::{
     password_hash::{
-        rand_core::OsRng, Error as Argon2Error, PasswordHash, PasswordHashString, PasswordHasher,
-        PasswordVerifier, SaltString,
+        rand_core::OsRng, Error as Argon2Error, PasswordHash, PasswordHasher, PasswordVerifier,
+        SaltString,
     },
     Argon2,
 };
 
-use std::error::Error;
+use std::error::Error as StdError;
 
 /// Hashes a password using Argon2id.
 ///
@@ -17,7 +17,7 @@ use std::error::Error;
 /// # Returns
 ///
 /// A result containing the hashed password and the salt, or an error if hashing fails.
-pub fn hash_random_salt(unhashed: &str) -> Result<PasswordHashString, Argon2Error> {
+pub fn hash_random_salt(unhashed: &str) -> Result<String, Argon2Error> {
     // Generate a random salt.
     let salt = SaltString::generate(&mut OsRng);
 
@@ -32,10 +32,10 @@ pub fn hash_random_salt(unhashed: &str) -> Result<PasswordHashString, Argon2Erro
     let hashed_password = argon2
         .hash_password(unhashed.as_bytes(), &salt)
         .map_err(|err| {
-            let error: Box<dyn Error> = format!("Error hashing unhashed: {}", err).into();
+            let _error: Box<dyn StdError> = format!("Error hashing unhashed: {}", err).into();
             Argon2Error::Password
         })?
-        .serialize();
+        .to_string();
 
     // Return the hashed password and the salt.
     Ok(hashed_password)
@@ -51,9 +51,10 @@ pub fn hash_random_salt(unhashed: &str) -> Result<PasswordHashString, Argon2Erro
 /// # Returns
 ///
 /// A result indicating whether the password is valid or an error if verification fails.
+
 pub fn verify_password(unhashed: &str, password_hash: &str) -> Result<(), Argon2Error> {
     // Parse the password hash.
-    let parsed_hash = PasswordHash::new(password_hash)?;
+    let parsed_hash = PasswordHash::new(&password_hash)?;
 
     // Verify password against hash using Argon2.
     let is_valid = Argon2::default().verify_password(unhashed.as_bytes(), &parsed_hash);

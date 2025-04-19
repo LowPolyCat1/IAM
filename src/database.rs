@@ -101,7 +101,7 @@ impl Database {
         };
 
         // Create the SQL query.
-        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash = $password_hash, password_salt = $password_salt, encrypted_email = $encrypted_email, email_hash = $email_hash, email_salt = $email_salt, created_at = time::now();";
+        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash = $password_hash, encrypted_email = $encrypted_email, email = $email, created_at = time::now();";
 
         // Bind the parameters to the query.
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
@@ -203,12 +203,12 @@ impl Database {
             .query(sql)
             .bind(vars)
             .await
-            .map(|mut response| response.take(0).unwrap());
+            .map(|mut response| response.take(0).unwrap_or_default());
 
         match found {
             Ok(mut users) => {
                 if let Some(user) = users.pop() {
-                    match crate::hashing::verify_password(&password, &user.password_hash) {
+                    match crate::hashing::verify_password(&password, user.password_hash.as_str()) {
                         Ok(_) => Ok(user),
                         Err(_e) => Err(From::from("Invalid password".to_string())),
                     }
