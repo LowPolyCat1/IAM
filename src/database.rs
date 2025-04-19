@@ -134,46 +134,6 @@ impl Database {
         }
     }
 
-    /// Finds a user by their email hash.
-    ///
-    /// # Arguments
-    ///
-    /// * `email` - The user's email address.
-    ///
-    /// # Returns
-    ///
-    /// A result containing the user's data or an error if the user is not found.
-    pub async fn find_user_by_email_hash(&self, email: String) -> Result<User, Box<dyn Error>> {
-        // Hash the email.
-
-        // Create the SQL query.
-        let sql = "SELECT * FROM users WHERE email = $email";
-
-        // Bind the parameters to the query.
-        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
-        vars.insert("email".into(), Value::from(email.as_str()));
-
-        // Execute the query.
-        let found: Result<Vec<User>, surrealdb::Error> = self
-            .db
-            .query(sql)
-            .bind(vars)
-            .await
-            .map(|mut response| response.take(0).unwrap());
-
-        // Return the result.
-        match found {
-            Ok(mut users) => {
-                if let Some(user) = users.pop() {
-                    Ok(user)
-                } else {
-                    Err(From::from("User not found".to_string()))
-                }
-            }
-            Err(error) => Err(From::from(error)),
-        }
-    }
-
     /// Authenticates a user.
     ///
     /// # Arguments

@@ -87,7 +87,6 @@ pub async fn start() {
             .service(ping)
             // Register the register route
             .service(register)
-            .service(find_user_by_email_hash)
             .service(authenticate_user)
     })
     // Bind the server to the specified IP address and port
@@ -192,28 +191,6 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
     {
         Ok(_) => HttpResponse::Ok().body("User registered successfully"),
         Err(error) => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
-    }
-}
-
-/// Finds a user by their email hash
-#[get("/users/{email}")]
-async fn find_user_by_email_hash(
-    email: web::Path<String>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    // Extract the email from the path
-    let email = email.into_inner();
-
-    // Get the database connection from the application state
-    let db = &data.db;
-
-    // Find the user by their email hash
-    match db.find_user_by_email_hash(email).await {
-        Ok(user) => {
-            let response = json!(user).to_string();
-            HttpResponse::Ok().body(response)
-        }
-        Err(error) => HttpResponse::NotFound().body(format!("Error: {}", error)),
     }
 }
 
