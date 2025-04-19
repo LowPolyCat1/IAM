@@ -32,20 +32,34 @@ pub struct Database {
     pub db: Surreal<Db>,
 }
 
+use crate::errors::custom_errors::CustomError;
+
 impl Database {
     /// Creates a new database connection.
-    pub async fn new() -> Self {
+    pub async fn new() -> Result<Self, crate::errors::custom_errors::CustomError> {
         // Get the database path from the environment variables.
-        let database_path = var("DATABASE_PATH").unwrap_or("/database".to_string());
+        let database_path = match var("DATABASE_PATH") {
+            Ok(database_path) => database_path,
+            Err(error) => {
+                tracing::error!("Error getting Database path: {}", error);
+                exit(1);
+            }
+        };
+
         // Connect to the database.
-        let db = Surreal::new::<RocksDb>(database_path).await.unwrap();
+        let db = Surreal::new::<RocksDb>(database_path)
+            .await
+            .map_err(|e| CustomError::DatabaseError(e.to_string()))?;
         // Use the namespace and database from the environment variables.
-        let database_namespace = var("DATABASE_NAMESPACE").unwrap_or("test".to_string());
-        let database_name = var("DATABASE_NAME").unwrap_or("test".to_string());
+        let database_namespace =
+            var("DATABASE_NAMESPACE").map_err(|e| CustomError::DatabaseError(e.to_string()))?;
+        let database_name =
+            var("DATABASE_NAME").map_err(|e| CustomError::DatabaseError(e.to_string()))?;
+
         db.use_ns(&database_namespace)
             .use_db(&database_name)
             .await
-            .unwrap();
+            .map_err(|e| CustomError::DatabaseError(e.to_string()))?;
 
         // Define a unique index on the users table.
         match db
@@ -59,7 +73,7 @@ impl Database {
             }
         };
 
-        Database { db }
+        Ok(Database { db })
     }
 
     /// Registers a new user in the database.
@@ -156,7 +170,9 @@ impl Database {
             }
             Err(error) => {
                 tracing::error!("Error creating user: {}", error);
-                Err(crate::errors::custom_errors::CustomError::DatabaseError)
+                return Err(crate::errors::custom_errors::CustomError::DatabaseError(
+                    error.to_string(),
+                ));
             }
         }
     }

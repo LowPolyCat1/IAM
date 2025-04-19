@@ -1,5 +1,6 @@
 use crate::database::Database;
-use actix_web::{self, get, post, web, App, HttpResponse, Responder};
+use crate::errors::custom_errors::CustomError;
+use actix_web::{self, get, post, web, App, Error, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{env::var, process::exit};
@@ -44,22 +45,22 @@ pub struct AppState {
 }
 
 /// Starts the Actix Web server
-pub async fn start() {
+pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing subscriber for logging
     let rolling = tracing_appender::rolling::Builder::new()
         .rotation(Rotation::DAILY)
         .filename_suffix("log")
-        .build("D:/VSC/Rust/Projects/current/IAM/logs")
-        .unwrap();
+        .build("D:/VSC/Rust/Projects/current/IAM/logs")?;
     tracing_subscriber::fmt().with_writer(rolling).init();
     tracing::info!("Starting Programm!");
 
     tracing::info!("Loading env");
     // Load environment variables from .env file
-    load_dotenv();
+    load_dotenv()?;
 
     // Create a new database connection
-    let database = Database::new().await;
+    let database = Database::new().await?;
+
     // Create the application state
     let app_state = AppState {
         db: database.clone(),
@@ -67,19 +68,19 @@ pub async fn start() {
 
     tracing::info!("Getting IP");
     // Get the server IP address from environment variables
-    let server_ip = get_server_ip();
+    let server_ip = get_server_ip()?;
 
     tracing::info!("Getting Port");
     // Get the server port as a string from environment variables
-    let server_port_string = get_server_port_string();
+    let server_port_string = get_server_port_string()?;
 
     tracing::info!("Parsing Port");
     // Parse the server port string into a u16
-    let server_port = parse_server_port(&server_port_string);
+    let server_port = parse_server_port(&server_port_string)?;
     tracing::info!("Setting up server");
 
     // Create the Actix Web server
-    let server = match actix_web::HttpServer::new(move || {
+    let server = actix_web::HttpServer::new(move || {
         App::new()
             // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))
@@ -90,78 +91,72 @@ pub async fn start() {
             .service(authenticate_user)
     })
     // Bind the server to the specified IP address and port
-    .bind((server_ip, server_port))
-    {
-        Ok(server) => server,
-        Err(error) => {
-            tracing::error!("couldn't bind to address: \n{}", error);
-            exit(1);
-        }
-    };
+    .bind((server_ip, server_port))?
+    .run()
+    .await?;
 
     tracing::info!("Starting server");
     // Start the server
-    match server.run().await {
-        Ok(_) => {
-            tracing::info!("Server stopped gently");
-        }
-        Err(error) => {
-            tracing::error!("Server stopped with error | {}", error);
-        }
-    };
+    Ok(())
 }
 
 /// Gets the server IP address from environment variables
-fn get_server_ip() -> String {
+fn get_server_ip() -> Result<String, CustomError> {
     match var("SERVER_IP") {
         Ok(server_ip) => {
             tracing::info!("Found SERVER_IP = {}", server_ip);
-            server_ip
+            Ok(server_ip)
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_IP | {}", error);
-            FALLBACK_IP.to_string()
+            Ok(FALLBACK_IP.to_string())
         }
     }
 }
 
 /// Gets the server port as a string from environment variables
-fn get_server_port_string() -> String {
+fn get_server_port_string() -> Result<String, CustomError> {
     match var("SERVER_PORT") {
         Ok(server_port) => {
             tracing::info!("Found SERVER_PORT = {}", server_port);
-            server_port
+            Ok(server_port)
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_PORT | {}", error);
-            FALLBACK_PORT.to_string()
+            Ok(FALLBACK_PORT.to_string())
         }
     }
 }
 
 /// Loads environment variables from the .env file
-fn load_dotenv() {
+fn load_dotenv() -> Result<(), CustomError> {
     match dotenvy::dotenv() {
         Ok(pathbuf) => {
             tracing::info!("loaded .env file: {:?}", pathbuf);
+            Ok(())
         }
         Err(error) => {
             tracing::error!("Couldn't load env | {}", error);
+            Err(CustomError::from(error))
         }
-    };
+    }
 }
 
 /// Parses the server port string into a u16
-fn parse_server_port(server_port_string: &str) -> u16 {
+fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
     match server_port_string.parse::<u16>() {
         Ok(port) => {
             tracing::info!("Successfully parsed port: {}", port);
-            port
+            Ok(port)
         }
         Err(error) => {
             tracing::error!("Error parsing port | {}", error);
             tracing::warn!("using fallback port {}", FALLBACK_PORT);
-            FALLBACK_PORT.parse::<u16>().unwrap_or(8080)
+            // Remove unwrap() and propagate the error
+            let fallback_port = FALLBACK_PORT
+                .parse::<u16>()
+                .map_err(|e| CustomError::EnvironmentVariableError(e.to_string()))?;
+            Ok(fallback_port)
         }
     }
 }
@@ -198,7 +193,7 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
         Err(error) => {
             tracing::error!("Error registering user: {}", error);
             match error {
-                crate::errors::custom_errors::CustomError::UserAlreadyExists => {
+                CustomError::UserAlreadyExists => {
                     HttpResponse::Conflict().body(format!("Error: {}", error))
                 }
                 _ => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
@@ -236,12 +231,8 @@ async fn authenticate_user(
         Err(error) => {
             tracing::error!("Error authenticating user: {}", error);
             match error {
-                crate::errors::custom_errors::CustomError::InvalidPassword => {
-                    HttpResponse::Ok().json(json!({"success": false}))
-                }
-                crate::errors::custom_errors::CustomError::UserNotFound => {
-                    HttpResponse::Ok().json(json!({"success": false}))
-                }
+                CustomError::InvalidPassword => HttpResponse::Ok().json(json!({"success": false})),
+                CustomError::UserNotFound => HttpResponse::Ok().json(json!({"success": false})),
                 _ => HttpResponse::InternalServerError().json(json!({"success": false})),
             }
         }
