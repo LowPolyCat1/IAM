@@ -21,6 +21,12 @@ impl Database {
         let database_path = var("DATABASE_PATH").unwrap_or("/database".to_string());
         let db = Surreal::new::<RocksDb>(database_path).await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
+
+        let _: Result<Vec<String>, surrealdb::Error> = db
+            .query("DEFINE INDEX users_id ON users FIELDS id UNIQUE")
+            .await
+            .map(|mut response| response.take(0).unwrap());
+
         Database { db }
     }
 
@@ -47,7 +53,7 @@ impl Database {
 
         let (email_hash, email_salt) = match hash(&email) {
             Ok(hash) => hash,
-            Err(e) => return Err(e),
+            Err(e) => return Err(From::from(e)),
         };
 
         let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash = $password_hash, password_salt = $password_salt, encrypted_email = $encrypted_email, email_hash = $email_hash, email_salt = $email_salt, created_at = time::now();";
@@ -76,12 +82,6 @@ impl Database {
             .db
             .query(sql)
             .bind(vars)
-            .await
-            .map(|mut response| response.take(0).unwrap());
-
-        let _: Result<Vec<String>, surrealdb::Error> = self
-            .db
-            .query("DEFINE INDEX users_id ON users FIELDS id UNIQUE")
             .await
             .map(|mut response| response.take(0).unwrap());
 
@@ -147,7 +147,7 @@ impl Database {
                 }
 
                 let password_hash = user.get(4).map(|s| s.clone()).unwrap_or_default();
-                let password_salt = user.get(5).map(|s| s.clone()).unwrap_or_default();
+                let _password_salt = user.get(5).map(|s| s.clone()).unwrap_or_default();
 
                 let (combined_password, _) =
                     hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;

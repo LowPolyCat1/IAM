@@ -27,8 +27,10 @@ pub async fn start() {
     tracing::info!("Loading env");
     load_dotenv();
 
-    let db = Database::new().await;
-    let app_state = AppState { db: db.clone() };
+    let database = Database::new().await;
+    let app_state = AppState {
+        db: database.clone(),
+    };
 
     tracing::info!("Getting IP");
     let server_ip = get_server_ip();
@@ -119,13 +121,15 @@ fn parse_server_port(server_port_string: &str) -> u16 {
 
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
-    let db = &data.db;
     let firstname = req.firstname.clone();
     let lastname = req.lastname.clone();
     let username = req.username.clone();
     let password = req.password.clone();
     let email = req.email.clone();
 
+    let db = &data.db;
+
+    // hashing is handled in the db.register function
     match db
         .register(firstname, lastname, username, password, email)
         .await
