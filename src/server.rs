@@ -1,6 +1,7 @@
 use crate::database::Database;
 use actix_web::{self, get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::{env::var, process::exit};
 use tracing_appender::rolling::Rotation;
 use validator::Validate;
@@ -8,6 +9,15 @@ use validator_derive::Validate;
 
 // Fallback IP address if not found in environment variables
 const FALLBACK_IP: &str = "127.0.0.1";
+
+/// Struct representing the login request body
+#[derive(Debug, Deserialize, Serialize, Validate)]
+struct LoginRequest {
+    #[validate(email(message = "Email is invalid"))]
+    email: String,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    password: String,
+}
 // Fallback port if not found in environment variables
 const FALLBACK_PORT: &str = "8080";
 
@@ -38,7 +48,7 @@ pub async fn start() {
     // Initialize tracing subscriber for logging
     let rolling = tracing_appender::rolling::Builder::new()
         .rotation(Rotation::DAILY)
-        .filename_suffix(".log")
+        .filename_suffix("log")
         .build("D:/VSC/Rust/Projects/current/IAM/logs")
         .unwrap();
     tracing_subscriber::fmt().with_writer(rolling).init();
@@ -77,6 +87,8 @@ pub async fn start() {
             .service(ping)
             // Register the register route
             .service(register)
+            .service(find_user_by_email_hash)
+            .service(authenticate_user)
     })
     // Bind the server to the specified IP address and port
     .bind((server_ip, server_port))
@@ -178,8 +190,58 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
         .register(firstname, lastname, username, password, email)
         .await
     {
-        Ok(message) => HttpResponse::Ok().body(message),
+        Ok(_) => HttpResponse::Ok().body("User registered successfully"),
         Err(error) => HttpResponse::InternalServerError().body(format!("Error: {}", error)),
+    }
+}
+
+/// Finds a user by their email hash
+#[get("/users/{email}")]
+async fn find_user_by_email_hash(
+    email: web::Path<String>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Extract the email from the path
+    let email = email.into_inner();
+
+    // Get the database connection from the application state
+    let db = &data.db;
+
+    // Find the user by their email hash
+    match db.find_user_by_email_hash(email).await {
+        Ok(user) => {
+            let response = json!(user).to_string();
+            HttpResponse::Ok().body(response)
+        }
+        Err(error) => HttpResponse::NotFound().body(format!("Error: {}", error)),
+    }
+}
+
+/// Authenticates a user
+#[post("/login")]
+async fn authenticate_user(
+    req: web::Json<LoginRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+
+    // Extract the request body
+    let email = req.0.email.clone();
+    let password = req.0.password.clone();
+
+    // Get the database connection from the application state
+    let db = &data.db;
+
+    // Authenticate the user
+    match db.authenticate_user(email, password).await {
+        Ok(user) => {
+            let response = json!(user).to_string();
+            HttpResponse::Ok().body(response)
+        }
+        Err(error) => HttpResponse::Unauthorized().body(format!("Error: {}", error)),
     }
 }
 

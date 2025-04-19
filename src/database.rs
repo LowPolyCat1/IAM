@@ -1,8 +1,8 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::hash;
 
-use actix_web::dev::Response;
 use dotenvy::var;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::process::exit;
@@ -16,6 +16,20 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 struct SecretString(String);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct User {
+    pub id: String,
+    pub encrypted_firstname: String,
+    pub encrypted_lastname: String,
+    pub username: String,
+    pub password_hash: String,
+    pub password_salt: String,
+    pub encrypted_email: String,
+    pub email_hash: String,
+    pub email_salt: String,
+    pub created_at: String,
+}
 
 impl SecretString {
     fn new(s: String) -> Self {
@@ -62,7 +76,7 @@ impl Database {
             .query("DEFINE INDEX users_id ON users FIELDS id UNIQUE")
             .await
         {
-            Ok(response) => response,
+            Ok(_) => {}
             Err(error) => {
                 tracing::error!("{}", error);
                 exit(1);
@@ -92,7 +106,7 @@ impl Database {
         username: String,
         password: String,
         email: String,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<bool, Box<dyn Error>> {
         // Generate a new UUID for the user.
         let uuid = Uuid::new_v4().to_string();
         // Generate a new encryption key.
@@ -140,16 +154,12 @@ impl Database {
         vars.insert("email_salt".into(), Value::from(email_salt.as_str()));
 
         // Execute the query.
-        let created: Result<Vec<String>, surrealdb::Error> = self
-            .db
-            .query(sql)
-            .bind(vars)
-            .await
-            .map(|mut response| response.take(0).unwrap());
+        let created: Result<surrealdb::Response, surrealdb::Error> =
+            self.db.query(sql).bind(vars).await;
 
         // Return the result.
         match created {
-            Ok(_) => Ok("User registered successfully".to_string()),
+            Ok(_) => Ok(true),
             Err(error) => Err(From::from(error)),
         }
     }
@@ -163,10 +173,7 @@ impl Database {
     /// # Returns
     ///
     /// A result containing the user's data or an error if the user is not found.
-    pub async fn find_user_by_email_hash(
-        &self,
-        email: String,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    pub async fn find_user_by_email_hash(&self, email: String) -> Result<User, Box<dyn Error>> {
         // Hash the email.
         let (email_hash, _) = match hash(&email) {
             Ok(hash) => hash,
@@ -174,14 +181,14 @@ impl Database {
         };
 
         // Create the SQL query.
-        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email FROM users WHERE email_hash = $email_hash";
+        let sql = "SELECT * FROM users WHERE email_hash = $email_hash";
 
         // Bind the parameters to the query.
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
         vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
 
         // Execute the query.
-        let found: Result<Vec<String>, surrealdb::Error> = self
+        let found: Result<Vec<User>, surrealdb::Error> = self
             .db
             .query(sql)
             .bind(vars)
@@ -190,7 +197,13 @@ impl Database {
 
         // Return the result.
         match found {
-            Ok(user) => Ok(user),
+            Ok(mut users) => {
+                if let Some(user) = users.pop() {
+                    Ok(user)
+                } else {
+                    Err(From::from("User not found".to_string()))
+                }
+            }
             Err(error) => Err(From::from(error)),
         }
     }
@@ -209,7 +222,7 @@ impl Database {
         &self,
         email: String,
         password: String,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    ) -> Result<User, Box<dyn Error>> {
         // Hash the email.
         let (email_hash, _) = match hash(&email) {
             Ok(hash) => hash,
@@ -217,14 +230,14 @@ impl Database {
         };
 
         // Create the SQL query.
-        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, password_hash, password_salt FROM users WHERE email_hash = $email_hash";
+        let sql = "SELECT * FROM users WHERE email_hash = $email_hash";
 
         // Bind the parameters to the query.
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
         vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
 
         // Execute the query.
-        let found: Result<Vec<String>, surrealdb::Error> = self
+        let found: Result<Vec<User>, surrealdb::Error> = self
             .db
             .query(sql)
             .bind(vars)
@@ -232,24 +245,21 @@ impl Database {
             .map(|mut response| response.take(0).unwrap());
 
         match found {
-            Ok(user) => {
-                if user.is_empty() {
-                    return Err(From::from("User not found".to_string()));
-                }
+            Ok(mut users) => {
+                if let Some(user) = users.pop() {
+                    let (combined_password, _) =
+                        hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;
 
-                let password_hash = user.get(4).map(|s| s.clone()).unwrap_or_default();
-                let _password_salt = user.get(5).map(|s| s.clone()).unwrap_or_default();
-
-                let (combined_password, _) =
-                    hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;
-
-                if SecretString::new(combined_password)
-                    .ct_eq(&SecretString::new(password_hash))
-                    .into()
-                {
-                    Ok(user)
+                    if SecretString::new(combined_password)
+                        .ct_eq(&SecretString::new(user.password_hash.clone()))
+                        .into()
+                    {
+                        Ok(user)
+                    } else {
+                        Err(From::from("Invalid password".to_string()))
+                    }
                 } else {
-                    Err(From::from("Invalid password".to_string()))
+                    Err(From::from("User not found".to_string()))
                 }
             }
             Err(error) => Err(From::from(error)),
