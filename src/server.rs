@@ -2,6 +2,8 @@ use crate::database::Database;
 use actix_web::{self, get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::{env::var, process::exit};
+use validator::Validate;
+use validator_derive::Validate;
 
 // Fallback IP address if not found in environment variables
 const FALLBACK_IP: &str = "127.0.0.1";
@@ -9,12 +11,17 @@ const FALLBACK_IP: &str = "127.0.0.1";
 const FALLBACK_PORT: &str = "8080";
 
 /// Struct representing the register request body
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 struct RegisterRequest {
+    #[validate(length(min = 1, message = "Firstname is required"))]
     firstname: String,
+    #[validate(length(min = 1, message = "Lastname is required"))]
     lastname: String,
+    #[validate(length(min = 1, message = "Username is required"))]
     username: String,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
     password: String,
+    #[validate(email(message = "Email is invalid"))]
     email: String,
 }
 
@@ -145,12 +152,17 @@ fn parse_server_port(server_port_string: &str) -> u16 {
 /// Registers a new user
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+
     // Extract the request body
-    let firstname = req.firstname.clone();
-    let lastname = req.lastname.clone();
-    let username = req.username.clone();
-    let password = req.password.clone();
-    let email = req.email.clone();
+    let firstname = req.0.firstname.clone();
+    let lastname = req.0.lastname.clone();
+    let username = req.0.username.clone();
+    let password = req.0.password.clone();
+    let email = req.0.email.clone();
 
     // Get the database connection from the application state
     let db = &data.db;
