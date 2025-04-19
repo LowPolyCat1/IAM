@@ -5,11 +5,12 @@ use chacha20poly1305::{
 };
 use rand::{rng, RngCore};
 
-const ENCRYPTION_KEY: &str = "selFGAyJiaDuX3dauX2PeFFy6o8iX924JU4vh5isEC5aiECT23pfWCcw4u0nSQ3mNSsyySkoJrnxI79fEkQSUvAUBXSCp7RE4gpA";
+use dotenvy::var;
 
 pub fn generate_key(uuid: String) -> Key {
     let mut key = [0u8; 32];
-    let encryption_key_bytes = ENCRYPTION_KEY.as_bytes();
+    let encryption_key = var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY must be set");
+    let encryption_key_bytes = encryption_key.as_bytes();
     let uuid_bytes = uuid.as_bytes();
 
     for i in 0..32 {

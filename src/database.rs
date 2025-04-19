@@ -1,7 +1,5 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
-use crate::hashing::hash_email;
-use argon2::{password_hash, Argon2, PasswordHasher};
-use base64::Engine;
+use crate::hashing::{hash_email, hash_password};
 use dotenvy::var;
 use std::error::Error;
 use surrealdb::{
@@ -31,16 +29,6 @@ impl Database {
         password: String,
         email: String,
     ) -> Result<String, Box<dyn Error>> {
-        let salt = match var("SALT") {
-            Ok(salt) => salt,
-            Err(e) => {
-                return Err(From::from(format!(
-                    "Error getting SALT env variable: {}",
-                    e
-                )))
-            }
-        };
-
         let uuid = Uuid::new_v4().to_string();
         let key = generate_key(uuid.clone());
         let key_bytes: [u8; 32] = key.into();
@@ -49,27 +37,10 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let combined_salt = format!("{}{}", salt, uuid);
-
-        let engine = base64::engine::general_purpose::STANDARD;
-        let encoded_salt = engine.encode(combined_salt.as_bytes());
-
-        let salt = match password_hash::SaltString::from_b64(&encoded_salt) {
-            Ok(salt) => salt,
-            Err(e) => return Err(From::from(format!("Error encoding combined salt: {}", e))),
+        let hashed_password_result = match hash_password(password, uuid.clone()) {
+            Ok(hash) => hash,
+            Err(e) => return Err(From::from(e)),
         };
-
-        let argon2 = Argon2::new(
-            argon2::Algorithm::Argon2id,
-            argon2::Version::V0x13,
-            argon2::Params::new(4096, 3, 1, None).unwrap(),
-        );
-
-        let hashed_password_result =
-            match PasswordHasher::hash_password(&argon2, password.as_bytes(), &salt) {
-                Ok(hash) => hash.to_string(),
-                Err(err) => return Err(From::from(err)),
-            };
 
         let email_hash = match hash_email(&email) {
             Ok(hash) => hash,
