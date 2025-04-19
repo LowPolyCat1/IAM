@@ -3,9 +3,12 @@ use actix_web::{self, get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::{env::var, process::exit};
 
+// Fallback IP address if not found in environment variables
 const FALLBACK_IP: &str = "127.0.0.1";
+// Fallback port if not found in environment variables
 const FALLBACK_PORT: &str = "8080";
 
+/// Struct representing the register request body
 #[derive(Debug, Deserialize, Serialize)]
 struct RegisterRequest {
     firstname: String,
@@ -15,39 +18,54 @@ struct RegisterRequest {
     email: String,
 }
 
+/// Application state shared across all routes
 #[derive(Clone)]
 pub struct AppState {
+    /// Database connection
     pub db: Database,
 }
 
+/// Starts the Actix Web server
 pub async fn start() {
+    // Initialize tracing subscriber for logging
     tracing_subscriber::fmt().init();
     tracing::info!("Starting Programm!");
 
     tracing::info!("Loading env");
+    // Load environment variables from .env file
     load_dotenv();
 
+    // Create a new database connection
     let database = Database::new().await;
+    // Create the application state
     let app_state = AppState {
         db: database.clone(),
     };
 
     tracing::info!("Getting IP");
+    // Get the server IP address from environment variables
     let server_ip = get_server_ip();
 
     tracing::info!("Getting Port");
+    // Get the server port as a string from environment variables
     let server_port_string = get_server_port_string();
 
     tracing::info!("Parsing Port");
+    // Parse the server port string into a u16
     let server_port = parse_server_port(&server_port_string);
     tracing::info!("Setting up server");
 
+    // Create the Actix Web server
     let server = match actix_web::HttpServer::new(move || {
         App::new()
+            // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))
+            // Register the ping route
             .service(ping)
+            // Register the register route
             .service(register)
     })
+    // Bind the server to the specified IP address and port
     .bind((server_ip, server_port))
     {
         Ok(server) => server,
@@ -58,6 +76,7 @@ pub async fn start() {
     };
 
     tracing::info!("Starting server");
+    // Start the server
     match server.run().await {
         Ok(_) => {
             tracing::info!("Server stopped gently");
@@ -68,6 +87,7 @@ pub async fn start() {
     };
 }
 
+/// Gets the server IP address from environment variables
 fn get_server_ip() -> String {
     match var("SERVER_IP") {
         Ok(server_ip) => {
@@ -81,6 +101,7 @@ fn get_server_ip() -> String {
     }
 }
 
+/// Gets the server port as a string from environment variables
 fn get_server_port_string() -> String {
     match var("SERVER_PORT") {
         Ok(server_port) => {
@@ -94,6 +115,7 @@ fn get_server_port_string() -> String {
     }
 }
 
+/// Loads environment variables from the .env file
 fn load_dotenv() {
     match dotenvy::dotenv() {
         Ok(pathbuf) => {
@@ -105,6 +127,7 @@ fn load_dotenv() {
     };
 }
 
+/// Parses the server port string into a u16
 fn parse_server_port(server_port_string: &str) -> u16 {
     match server_port_string.parse::<u16>() {
         Ok(port) => {
@@ -119,14 +142,17 @@ fn parse_server_port(server_port_string: &str) -> u16 {
     }
 }
 
+/// Registers a new user
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+    // Extract the request body
     let firstname = req.firstname.clone();
     let lastname = req.lastname.clone();
     let username = req.username.clone();
     let password = req.password.clone();
     let email = req.email.clone();
 
+    // Get the database connection from the application state
     let db = &data.db;
 
     // hashing is handled in the db.register function
@@ -139,6 +165,7 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
     }
 }
 
+/// Pings the server
 #[get("/ping")]
 async fn ping() -> impl Responder {
     "pong"
