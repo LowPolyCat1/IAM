@@ -1,5 +1,5 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
-use crate::hashing::{hash_email, hash_password};
+use crate::hashing::hash;
 
 use dotenvy::var;
 use std::error::Error;
@@ -38,12 +38,12 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let password_hash_and_salt = match hash_password(&password) {
+        let password_hash_and_salt = match hash(&password) {
             Ok(result) => result,
             Err(e) => return Err(From::from(e)),
         };
 
-        let email_hash = match hash_email(&email) {
+        let email_hash = match hash(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(e),
         };
@@ -111,7 +111,7 @@ impl Database {
         email: String,
         password: String,
     ) -> Result<Vec<String>, Box<dyn Error>> {
-        let email_hash = match hash_email(&email) {
+        let email_hash = match hash(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(e),
         };
@@ -140,7 +140,7 @@ impl Database {
                     crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
                 let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
 
-                let (combined_password, _) = match hash_password(&password) {
+                let (combined_password, _) = match hash(&password) {
                     Ok(result) => (result.0, result.1),
                     Err(e) => return Err(From::from(e)),
                 };

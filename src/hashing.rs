@@ -3,12 +3,7 @@ use argon2::{
     Argon2,
 };
 
-use sha2::{Digest, Sha256};
 use std::error::Error;
-
-pub fn hash_email(email: &str) -> Result<(String, String), Box<dyn Error>> {
-    hash(email)
-}
 
 pub fn hash(unhashed: &str) -> Result<(String, String), Box<dyn Error>> {
     let salt = SaltString::generate(&mut OsRng);
@@ -25,8 +20,4 @@ pub fn hash(unhashed: &str) -> Result<(String, String), Box<dyn Error>> {
         .to_string();
 
     Ok((hashed_password, salt.to_string()))
-}
-
-pub fn hash_password(password: &str) -> Result<(String, String), Box<dyn Error>> {
-    hash(password)
 }
