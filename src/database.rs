@@ -1,21 +1,17 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
-use crate::hashing::{hash_random_salt, hash_with_salt};
+use crate::hashing::hash_random_salt;
 
 use dotenvy::var;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::process::exit;
-use subtle::ConstantTimeEq;
 use surrealdb::{
     engine::local::{Db, RocksDb},
     sql::Value,
     Surreal,
 };
 use uuid::Uuid;
-
-#[derive(Clone, Debug)]
-struct SecretString(String);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
@@ -29,24 +25,6 @@ pub struct User {
     pub email_hash: String,
     pub email_salt: String,
     pub created_at: String,
-}
-
-impl SecretString {
-    fn new(s: String) -> Self {
-        SecretString(s)
-    }
-}
-
-impl ConstantTimeEq for SecretString {
-    fn ct_eq(&self, other: &Self) -> subtle::Choice {
-        self.0.as_bytes().ct_eq(other.0.as_bytes())
-    }
-}
-
-impl AsRef<str> for SecretString {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
 }
 
 /// Represents the database connection.
@@ -247,16 +225,9 @@ impl Database {
         match found {
             Ok(mut users) => {
                 if let Some(user) = users.pop() {
-                    let combined_password = hash_with_salt(&password, &user.password_salt)
-                        .map_err(|e| format!("Error hashing password: {}", e))?;
-
-                    if SecretString::new(combined_password)
-                        .ct_eq(&SecretString::new(user.password_hash.clone()))
-                        .into()
-                    {
-                        Ok(user)
-                    } else {
-                        Err(From::from("Invalid password".to_string()))
+                    match crate::hashing::verify_password(&password, &user.password_hash) {
+                        Ok(_) => Ok(user),
+                        Err(_e) => Err(From::from("Invalid password".to_string())),
                     }
                 } else {
                     Err(From::from("User not found".to_string()))
