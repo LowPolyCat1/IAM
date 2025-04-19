@@ -4,24 +4,17 @@ mod hashing_tests {
 
     #[test]
     fn test_hash_email() {
-        // Set the STATIC_SALT environment variable for testing
-        std::env::set_var("STATIC_SALT", "test_salt");
-
-        let email = "test@example.com".to_string();
+        let email = "testmail@example.com".to_string();
         let result = hash_email(&email);
         assert!(result.is_ok());
         let hash = result.unwrap();
-        assert_eq!(hash.len(), 64); // SHA256 hash length is 64 characters
+        assert_eq!(hash.0.len(), 96); // Aragon2 hash length is 96 characters
     }
 
     #[test]
     fn test_hash_password() {
-        // Set the SALT environment variable for testing
-        std::env::set_var("SALT", "test_salt");
-
         let password = "password".to_string();
-        let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
-        let result = hash_password(password);
+        let result = hash_password(&password);
         assert!(result.is_ok());
         let hash = result.unwrap();
         assert!(!hash.0.is_empty());

@@ -1,7 +1,6 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::{hash_email, hash_password};
 
-use argon2::password_hash::{PasswordHasher, SaltString};
 use dotenvy::var;
 use std::error::Error;
 use surrealdb::{
@@ -39,7 +38,7 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let (encrypted_password, salt) = match hash_password(password) {
+        let encrypted_password = match hash_password(&password) {
             Ok(result) => result,
             Err(e) => return Err(From::from(e)),
         };
@@ -59,7 +58,7 @@ impl Database {
             .bind(("encrypted_lastname", encrypted_lastname))
             .bind(("username", username))
             .bind(("encrypted_password", encrypted_password))
-            .bind(("encrypted_email", (encrypted_email, salt)))
+            .bind(("encrypted_email", encrypted_email))
             .bind(("email_hash", email_hash))
             .await
             .map(|mut response| response.take(0).unwrap());
@@ -141,7 +140,7 @@ impl Database {
                     crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
                 let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
 
-                let (combined_password, _) = match hash_password(password) {
+                let (combined_password, _) = match hash_password(&password) {
                     Ok(result) => (result.0, result.1),
                     Err(e) => return Err(From::from(e)),
                 };

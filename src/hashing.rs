@@ -6,25 +6,11 @@ use dotenvy::var;
 use sha2::{Digest, Sha256};
 use std::error::Error;
 
-pub fn hash_email(email: &String) -> Result<String, Box<dyn Error>> {
-    let static_salt = match var("STATIC_SALT") {
-        Ok(salt) => salt,
-        Err(e) => {
-            return Err(From::from(format!(
-                "Error getting STATIC_SALT env variable: {}",
-                e
-            )))
-        }
-    };
-
-    let mut hasher = Sha256::new();
-    hasher.update(static_salt.as_bytes());
-    hasher.update(email.as_bytes());
-    let result = hasher.finalize();
-    Ok(format!("{:x}", result))
+pub fn hash_email(email: &str) -> Result<(String, String), Box<dyn Error>> {
+    hash(email)
 }
 
-pub fn hash_password(password: String) -> Result<(String, String), Box<dyn Error>> {
+pub fn hash(unhashed: &str) -> Result<(String, String), Box<dyn Error>> {
     let salt = SaltString::generate(&mut OsRng);
 
     let argon2 = Argon2::new(
@@ -34,9 +20,13 @@ pub fn hash_password(password: String) -> Result<(String, String), Box<dyn Error
     );
 
     let hashed_password = argon2
-        .hash_password(password.as_bytes(), &salt)
-        .map_err(|err| format!("Error hashing password: {}", err))?
+        .hash_password(unhashed.as_bytes(), &salt)
+        .map_err(|err| format!("Error hashing unhashed: {}", err))?
         .to_string();
 
     Ok((hashed_password, salt.to_string()))
+}
+
+pub fn hash_password(password: &str) -> Result<(String, String), Box<dyn Error>> {
+    hash(password)
 }
