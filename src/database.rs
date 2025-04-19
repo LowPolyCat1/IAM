@@ -1,9 +1,11 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::hash;
 
+use actix_web::dev::Response;
 use dotenvy::var;
 use std::collections::BTreeMap;
 use std::error::Error;
+use std::process::exit;
 use subtle::ConstantTimeEq;
 use surrealdb::{
     engine::local::{Db, RocksDb},
@@ -56,10 +58,16 @@ impl Database {
             .unwrap();
 
         // Define a unique index on the users table.
-        let _: Result<Vec<String>, surrealdb::Error> = db
+        match db
             .query("DEFINE INDEX users_id ON users FIELDS id UNIQUE")
             .await
-            .map(|mut response| response.take(0).unwrap());
+        {
+            Ok(response) => response,
+            Err(error) => {
+                tracing::error!("{}", error);
+                exit(1);
+            }
+        };
 
         Database { db }
     }

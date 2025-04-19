@@ -25,6 +25,7 @@ rand = "0.9.1"
 validator = "0.20.0"
 validator_derive = "0.20.0"
 subtle = { version = "2.6.1" }
+tracing-appender = { version = "0.2.3" }
 
 
 [build-dependencies]

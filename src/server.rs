@@ -2,6 +2,7 @@ use crate::database::Database;
 use actix_web::{self, get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::{env::var, process::exit};
+use tracing_appender::rolling::Rotation;
 use validator::Validate;
 use validator_derive::Validate;
 
@@ -35,7 +36,12 @@ pub struct AppState {
 /// Starts the Actix Web server
 pub async fn start() {
     // Initialize tracing subscriber for logging
-    tracing_subscriber::fmt().init();
+    let rolling = tracing_appender::rolling::Builder::new()
+        .rotation(Rotation::DAILY)
+        .filename_suffix(".log")
+        .build("D:/VSC/Rust/Projects/current/IAM/logs")
+        .unwrap();
+    tracing_subscriber::fmt().with_writer(rolling).init();
     tracing::info!("Starting Programm!");
 
     tracing::info!("Loading env");
