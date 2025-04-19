@@ -63,7 +63,7 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-IAM is an Identity and Access Management (IAM) system built with Rust. It provides secure authentication, authorization, and user management capabilities.
+This project is purely a demonstration of my technical skills. It showcases my abilities in Rust programming and related technologies.
 
 Key features:
 
