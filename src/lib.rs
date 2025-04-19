@@ -6,7 +6,3 @@ pub mod encryption;
 pub mod hashing;
 pub mod logging;
 pub mod server;
-
-pub fn init() {
-    dotenvy::dotenv().ok();
-}
