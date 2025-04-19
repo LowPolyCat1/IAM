@@ -4,12 +4,34 @@ use crate::hashing::hash;
 use dotenvy::var;
 use std::collections::BTreeMap;
 use std::error::Error;
+use subtle::ConstantTimeEq;
 use surrealdb::{
     engine::local::{Db, RocksDb},
     sql::Value,
     Surreal,
 };
 use uuid::Uuid;
+
+#[derive(Clone, Debug)]
+struct SecretString(String);
+
+impl SecretString {
+    fn new(s: String) -> Self {
+        SecretString(s)
+    }
+}
+
+impl ConstantTimeEq for SecretString {
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
+        self.0.as_bytes().ct_eq(other.0.as_bytes())
+    }
+}
+
+impl AsRef<str> for SecretString {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
 /// Represents the database connection.
 #[derive(Clone)]
@@ -208,7 +230,10 @@ impl Database {
                 let (combined_password, _) =
                     hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;
 
-                if combined_password == password_hash {
+                if SecretString::new(combined_password)
+                    .ct_eq(&SecretString::new(password_hash))
+                    .into()
+                {
                     Ok(user)
                 } else {
                     Err(From::from("Invalid password".to_string()))
