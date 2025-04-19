@@ -70,26 +70,26 @@ fn get_server_ip() -> String {
     match var("SERVER_IP") {
         Ok(server_ip) => {
             tracing::info!("Found SERVER_IP = {}", server_ip);
-            return server_ip;
+            server_ip
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_IP | {}", error);
-            return FALLBACK_IP.to_string();
+            FALLBACK_IP.to_string()
         }
-    };
+    }
 }
 
 fn get_server_port_string() -> String {
     match var("SERVER_PORT") {
         Ok(server_port) => {
             tracing::info!("Found SERVER_PORT = {}", server_port);
-            return server_port;
+            server_port
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_PORT | {}", error);
-            return FALLBACK_PORT.to_string();
+            FALLBACK_PORT.to_string()
         }
-    };
+    }
 }
 
 fn load_dotenv() {
@@ -107,14 +107,14 @@ fn parse_server_port(server_port_string: &str) -> u16 {
     match server_port_string.parse::<u16>() {
         Ok(port) => {
             tracing::info!("Successfully parsed port: {}", port);
-            return port;
+            port
         }
         Err(error) => {
             tracing::error!("Error parsing port | {}", error);
             tracing::warn!("using fallback port {}", FALLBACK_PORT);
-            return FALLBACK_PORT.parse::<u16>().unwrap_or(8080);
+            FALLBACK_PORT.parse::<u16>().unwrap_or(8080)
         }
-    };
+    }
 }
 
 #[post("/register")]

@@ -84,12 +84,8 @@ impl Database {
             .map(|mut response| response.take(0).unwrap());
 
         match created {
-            Ok(_) => {
-                return Ok("User registered successfully".to_string());
-            }
-            Err(error) => {
-                return Err(From::from(error));
-            }
+            Ok(_) => Ok("User registered successfully".to_string()),
+            Err(error) => Err(From::from(error)),
         }
     }
 
@@ -105,12 +101,8 @@ impl Database {
             .map(|mut response| response.take(0).unwrap());
 
         match found {
-            Ok(user) => {
-                return Ok(user);
-            }
-            Err(error) => {
-                return Err(From::from(error));
-            }
+            Ok(user) => Ok(user),
+            Err(error) => Err(From::from(error)),
         }
     }
 }
