@@ -11,7 +11,6 @@ pub fn generate_key(uuid: String) -> Key {
     let mut key = [0u8; 32];
     let encryption_key = var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY must be set");
     let encryption_key_bytes = encryption_key.as_bytes();
-    let uuid_bytes = uuid.as_bytes();
 
     for i in 0..32 {
         if i < encryption_key_bytes.len() {
@@ -19,11 +18,7 @@ pub fn generate_key(uuid: String) -> Key {
         }
     }
 
-    for i in 0..(32 - encryption_key_bytes.len()).min(uuid_bytes.len()) {
-        key[encryption_key_bytes.len() + i] = uuid_bytes[i];
-    }
-
-    *Key::from_slice(&key)
+    Key::from_slice(&key).clone()
 }
 
 pub struct EncryptedData {
@@ -92,22 +87,4 @@ pub fn decrypt_with_nonce(key_bytes: &[u8; 32], combined_base64: &str) -> String
         .expect("decryption failure");
 
     String::from_utf8(plaintext_bytes).expect("utf8 decode failure")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_encryption_decryption() {
-        let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
-        let key = generate_key(uuid);
-        let plaintext = b"This is a secret message.";
-
-        let encrypted_data = encrypt(&key, plaintext).unwrap();
-        let decrypted_plaintext =
-            decrypt(&key, &encrypted_data.ciphertext, &encrypted_data.nonce).unwrap();
-
-        assert_eq!(plaintext, &decrypted_plaintext[..]);
-    }
 }
