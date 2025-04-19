@@ -40,17 +40,17 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let password_hash_and_salt = match hash(&password) {
+        let (password_hash, password_salt) = match hash(&password) {
             Ok(result) => result,
             Err(e) => return Err(From::from(e)),
         };
 
-        let email_hash = match hash(&email) {
+        let (email_hash, email_salt) = match hash(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(e),
         };
 
-        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash_and_salt = $password_hash_and_salt, salt = $salt, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();";
+        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash = $password_hash, password_salt = $password_salt, encrypted_email = $encrypted_email, email_hash = $email_hash, email_salt = $email_salt, created_at = time::now();";
 
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
         vars.insert("id".into(), Value::from(uuid.as_str()));
@@ -63,17 +63,14 @@ impl Database {
             Value::from(encrypted_lastname.as_str()),
         );
         vars.insert("username".into(), Value::from(username.as_str()));
-        let (password_hash, salt) = password_hash_and_salt;
-        vars.insert(
-            "password_hash_and_salt".into(),
-            Value::from(password_hash.as_str()),
-        );
-        vars.insert("salt".into(), Value::from(salt.as_str()));
+        vars.insert("password_hash".into(), Value::from(password_hash.as_str()));
+        vars.insert("password_salt".into(), Value::from(password_salt.as_str()));
         vars.insert(
             "encrypted_email".into(),
             Value::from(encrypted_email.as_str()),
         );
-        vars.insert("email_hash".into(), Value::from(email_hash.0.as_str()));
+        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
+        vars.insert("email_salt".into(), Value::from(email_salt.as_str()));
 
         let created: Result<Vec<String>, surrealdb::Error> = self
             .db
@@ -96,8 +93,13 @@ impl Database {
 
     pub async fn find_user_by_email_hash(
         &self,
-        email_hash: String,
+        email: String,
     ) -> Result<Vec<String>, Box<dyn Error>> {
+        let (email_hash, _) = match hash(&email) {
+            Ok(hash) => hash,
+            Err(e) => return Err(From::from(e)),
+        };
+
         let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email FROM users WHERE email_hash = $email_hash";
 
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
@@ -121,15 +123,15 @@ impl Database {
         email: String,
         password: String,
     ) -> Result<Vec<String>, Box<dyn Error>> {
-        let email_hash = match hash(&email) {
+        let (email_hash, _) = match hash(&email) {
             Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
 
-        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, password_hash_and_salt, salt FROM users WHERE email_hash = $email_hash";
+        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, password_hash, password_salt FROM users WHERE email_hash = $email_hash";
 
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
-        vars.insert("email_hash".into(), Value::from(email_hash.0.as_str()));
+        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
 
         let found: Result<Vec<String>, surrealdb::Error> = self
             .db
@@ -144,14 +146,13 @@ impl Database {
                     return Err(From::from("User not found".to_string()));
                 }
 
-                let password_hash_and_salt = user.get(4).map(|s| s.clone()).unwrap_or_default();
+                let password_hash = user.get(4).map(|s| s.clone()).unwrap_or_default();
+                let password_salt = user.get(5).map(|s| s.clone()).unwrap_or_default();
 
-                let (combined_password, _) = match hash(&password) {
-                    Ok(result) => (result.0, result.1),
-                    Err(e) => return Err(From::from(e)),
-                };
+                let (combined_password, _) =
+                    hash(&password).map_err(|e| format!("Error hashing password: {}", e))?;
 
-                if combined_password == password_hash_and_salt {
+                if combined_password == password_hash {
                     Ok(user)
                 } else {
                     Err(From::from("Invalid password".to_string()))
