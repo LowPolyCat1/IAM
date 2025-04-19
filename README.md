@@ -24,8 +24,8 @@
     <a href="https://github.com/lowpolycat1/IAM"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/lowpolycat1/IAM">View Demo</a>
-    ·
+    <!-- <a href="https://github.com/lowpolycat1/IAM">View Demo</a> -->
+    <!-- · -->
     <a href="https://github.com/lowpolycat1/IAM/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
     <a href="https://github.com/lowpolycat1/IAM/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
@@ -63,18 +63,16 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-This project is purely a demonstration of my technical skills. It showcases my abilities in Rust programming and related technologies.
-
-Key features:
+This project is a demonstration of an Identity and Access Management (IAM) system built with Rust. It showcases various security features and best practices, including:
 
 * Secure password handling using Argon2
 * User data encryption with ChaCha20-Poly1305
 * Salt + Pepper hashing and encryption
-* Secure key management using .env files and Docker (WIP) secrets
-* Secure authentication and logging (WIP)
-* Rate limiting to prevent brute-force attacks (WIP)
-* Password reset functionality  (WIP)
-* HTTPS everywhere (TLS) for data in transit (WIP)
+* Configuration via environment variables
+
+The project uses Actix-web for building the server and provides basic endpoints for user registration and health checks. It also includes modules for database interaction, encryption, hashing, and logging.
+
+**Note:** This project is purely a demonstration and is not intended for production use.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -137,11 +135,16 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ROADMAP -->
-## Implemented features
+## Features
 
-* Actix-web server
-
-* Surrealdb database (as file)
+* Secure password handling using Argon2
+* User data encryption with ChaCha20-Poly1305
+* Salt + Pepper hashing and encryption
+* Secure key management using .env files and Docker (WIP) secrets
+* Secure authentication and logging (WIP)
+* Rate limiting to prevent brute-force attacks (WIP)
+* Password reset functionality  (WIP)
+* HTTPS everywhere (TLS) for data in transit (WIP)
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
