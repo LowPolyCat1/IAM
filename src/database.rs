@@ -203,10 +203,11 @@ impl Database {
         let mut users: Vec<User> = response.take(0)?;
 
         if let Some(user) = users.pop() {
-            // Extract the id as a string from the Thing object
-
-            // user.password_hash == id;
-            Ok(user)
+            if verify_password(&password, &user.password_hash).is_ok() {
+                Ok(user)
+            } else {
+                Err(From::from("Invalid password".to_string()))
+            }
         } else {
             Err(From::from("User not found".to_string()))
         }
