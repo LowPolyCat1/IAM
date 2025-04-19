@@ -12,6 +12,9 @@ pub enum CustomError {
     /// Represents an error during hashing.
     #[error("Hashing error")]
     HashingError,
+    /// Represents an encryption error.
+    #[error("Encryption error")]
+    EncryptionError,
     /// Represents a database error.
     #[error("Database error")]
     DatabaseError,

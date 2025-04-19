@@ -1,4 +1,4 @@
-use crate::encryption::{encrypt_with_random_nonce, generate_key};
+use crate::encryption::{encrypt_with_random_nonce, generate_key, EncryptionError};
 use crate::hashing::{hash_random_salt, verify_password};
 
 use dotenvy::var;
@@ -106,9 +106,12 @@ impl Database {
         let key_bytes: [u8; 32] = key.into();
 
         // Encrypt the user's personal information.
-        let encrypted_firstname = encrypt_with_random_nonce(&key_bytes, &firstname);
-        let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
-        let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
+        let encrypted_firstname = encrypt_with_random_nonce(&key_bytes, &firstname)
+            .map_err(|_| crate::errors::custom_errors::CustomError::EncryptionError)?;
+        let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname)
+            .map_err(|_| crate::errors::custom_errors::CustomError::EncryptionError)?;
+        let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email)
+            .map_err(|_| crate::errors::custom_errors::CustomError::EncryptionError)?;
 
         // Hash the password and email.
         let password_hash = match hash_random_salt(&password) {

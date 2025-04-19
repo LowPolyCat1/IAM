@@ -1,12 +1,20 @@
 use base64::{engine::general_purpose, Engine as base64Engine};
 use chacha20poly1305::{
-    aead::{Aead, Error, KeyInit},
+    aead::{Aead, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
+use dotenvy::var;
 use rand::rng;
 use rand::RngCore;
+use thiserror::Error;
 
-use dotenvy::var;
+#[derive(Error, Debug)]
+pub enum EncryptionError {
+    #[error("Encryption error")]
+    EncryptionError,
+    #[error("Decryption error")]
+    DecryptionError,
+}
 
 pub fn generate_key() -> Key {
     let mut key = [0u8; 32];
@@ -41,16 +49,20 @@ pub struct EncryptedData {
     pub nonce: Nonce,
 }
 
-pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, Error> {
+pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionError> {
     let nonce = generate_nonce();
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
-    let ciphertext = aead.encrypt(&nonce, plaintext)?;
+    let ciphertext = aead
+        .encrypt(&nonce, plaintext)
+        .map_err(|e| EncryptionError::EncryptionError)?;
     Ok(EncryptedData { ciphertext, nonce })
 }
 
-pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, Error> {
+pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, EncryptionError> {
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
-    let decrypted_data = aead.decrypt(nonce, ciphertext)?;
+    let decrypted_data = aead
+        .decrypt(nonce, ciphertext)
+        .map_err(|e| EncryptionError::DecryptionError)?;
     Ok(decrypted_data)
 }
 
@@ -62,7 +74,10 @@ fn generate_nonce() -> Nonce {
 }
 
 /// Encrypts data with a random nonce. Returns base64-encoded string (nonce + ciphertext).
-pub fn encrypt_with_random_nonce(key_bytes: &[u8; 32], plaintext: &str) -> String {
+pub fn encrypt_with_random_nonce(
+    key_bytes: &[u8; 32],
+    plaintext: &str,
+) -> Result<String, EncryptionError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
 
     // Generate random nonce
@@ -74,7 +89,7 @@ pub fn encrypt_with_random_nonce(key_bytes: &[u8; 32], plaintext: &str) -> Strin
     // Encrypt
     let ciphertext = cipher
         .encrypt(nonce, plaintext.as_bytes())
-        .expect("encryption failure");
+        .map_err(|_| EncryptionError::EncryptionError)?;
 
     // Combine nonce + ciphertext
     let mut combined = Vec::new();
@@ -82,17 +97,20 @@ pub fn encrypt_with_random_nonce(key_bytes: &[u8; 32], plaintext: &str) -> Strin
     combined.extend_from_slice(&ciphertext);
 
     // Encode combined data as Base64 for storage
-    general_purpose::STANDARD.encode(combined)
+    Ok(general_purpose::STANDARD.encode(combined))
 }
 
 /// Decrypts base64-encoded (nonce + ciphertext) string.
-pub fn decrypt_with_nonce(key_bytes: &[u8; 32], combined_base64: &str) -> String {
+pub fn decrypt_with_nonce(
+    key_bytes: &[u8; 32],
+    combined_base64: &str,
+) -> Result<String, EncryptionError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
 
     // Decode from Base64
     let combined = general_purpose::STANDARD
         .decode(combined_base64)
-        .expect("base64 decode failure");
+        .map_err(|_| EncryptionError::DecryptionError)?;
 
     // Split into nonce + ciphertext
     let (nonce_bytes, ciphertext) = combined.split_at(12);
@@ -101,7 +119,7 @@ pub fn decrypt_with_nonce(key_bytes: &[u8; 32], combined_base64: &str) -> String
     // Decrypt
     let plaintext_bytes = cipher
         .decrypt(nonce, ciphertext)
-        .expect("decryption failure");
+        .map_err(|_| EncryptionError::DecryptionError)?;
 
-    String::from_utf8(plaintext_bytes).expect("utf8 decode failure")
+    String::from_utf8(plaintext_bytes).map_err(|_| EncryptionError::DecryptionError)
 }
