@@ -21,10 +21,11 @@ mod hashing_tests {
 
         let password = "password".to_string();
         let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
-        let result = hash_password(password, uuid);
+        let result = hash_password(password);
         assert!(result.is_ok());
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
+        assert!(!hash.1.is_empty());
     }
 }
 

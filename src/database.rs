@@ -1,10 +1,7 @@
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::{hash_email, hash_password};
 
-use argon2::{
-    password_hash::{PasswordHasher, SaltString},
-    Argon2,
-};
+use argon2::password_hash::{PasswordHasher, SaltString};
 use dotenvy::var;
 use std::error::Error;
 use surrealdb::{
@@ -42,8 +39,8 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let encrypted_password = match hash_password(password, uuid.clone()) {
-            Ok(hash) => hash,
+        let (encrypted_password, salt) = match hash_password(password) {
+            Ok(result) => result,
             Err(e) => return Err(From::from(e)),
         };
 
@@ -52,7 +49,7 @@ impl Database {
             Err(e) => return Err(e),
         };
 
-        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, encrypted_password = $encrypted_password, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();\nDEFINE INDEX users_id ON users FIELDS id UNIQUE;";
+        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, encrypted_password = $encrypted_password, salt = $salt, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();\nDEFINE INDEX users_id ON users FIELDS id UNIQUE;";
 
         let created: Result<Vec<String>, surrealdb::Error> = self
             .db
@@ -62,7 +59,7 @@ impl Database {
             .bind(("encrypted_lastname", encrypted_lastname))
             .bind(("username", username))
             .bind(("encrypted_password", encrypted_password))
-            .bind(("encrypted_email", encrypted_email))
+            .bind(("encrypted_email", (encrypted_email, salt)))
             .bind(("email_hash", email_hash))
             .await
             .map(|mut response| response.take(0).unwrap());
@@ -79,7 +76,7 @@ impl Database {
     ) -> Result<Vec<String>, Box<dyn Error>> {
         let found: Result<Vec<String>, surrealdb::Error> = self
             .db
-            .query("SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, salt FROM users WHERE email_hash = $email_hash")
+            .query("SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email FROM users WHERE email_hash = $email_hash")
             .bind(("email_hash", email_hash))
             .await
             .map(|mut response| response.take(0).unwrap());
@@ -137,7 +134,6 @@ impl Database {
                 let encrypted_lastname = user.get(2).map(|s| s.clone()).unwrap_or_default();
                 let encrypted_email = user.get(3).map(|s| s.clone()).unwrap_or_default();
                 let encrypted_password = user.get(4).map(|s| s.clone()).unwrap_or_default();
-                let salt = user.get(5).map(|s| s.clone()).unwrap_or_default();
 
                 let firstname =
                     crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_firstname);
@@ -145,20 +141,12 @@ impl Database {
                     crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
                 let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
 
-                let salt_string = SaltString::from_b64(&salt).unwrap();
+                let (combined_password, _) = match hash_password(password) {
+                    Ok(result) => (result.0, result.1),
+                    Err(e) => return Err(From::from(e)),
+                };
 
-                let argon2 = Argon2::new(
-                    argon2::Algorithm::Argon2id,
-                    argon2::Version::V0x13,
-                    argon2::Params::new(4096, 3, 1, None).unwrap(),
-                );
-
-                let password_hash = argon2
-                    .hash_password(password.as_bytes(), &salt_string)
-                    .map_err(|err| format!("Error hashing password: {}", err))?
-                    .to_string();
-
-                if password_hash == encrypted_password {
+                if combined_password == encrypted_password {
                     user[1] = firstname;
                     user[2] = lastname;
                     user[3] = email;
