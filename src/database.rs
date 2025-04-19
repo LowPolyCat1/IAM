@@ -20,10 +20,8 @@ pub struct User {
     pub encrypted_lastname: String,
     pub username: String,
     pub password_hash: String,
-    pub password_salt: String,
     pub encrypted_email: String,
-    pub email_hash: String,
-    pub email_salt: String,
+    pub email: String,
     pub created_at: String,
 }
 
@@ -97,13 +95,8 @@ impl Database {
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
         // Hash the password and email.
-        let (password_hash, password_salt) = match hash_random_salt(&password) {
+        let password_hash = match hash_random_salt(&password) {
             Ok(result) => result,
-            Err(e) => return Err(From::from(e)),
-        };
-
-        let (email_hash, email_salt) = match hash_random_salt(&email) {
-            Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
 
@@ -123,13 +116,11 @@ impl Database {
         );
         vars.insert("username".into(), Value::from(username.as_str()));
         vars.insert("password_hash".into(), Value::from(password_hash.as_str()));
-        vars.insert("password_salt".into(), Value::from(password_salt.as_str()));
         vars.insert(
             "encrypted_email".into(),
             Value::from(encrypted_email.as_str()),
         );
-        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
-        vars.insert("email_salt".into(), Value::from(email_salt.as_str()));
+        vars.insert("email".into(), Value::from(email.as_str()));
 
         // Execute the query.
         let created: Result<surrealdb::Response, surrealdb::Error> =
@@ -153,17 +144,13 @@ impl Database {
     /// A result containing the user's data or an error if the user is not found.
     pub async fn find_user_by_email_hash(&self, email: String) -> Result<User, Box<dyn Error>> {
         // Hash the email.
-        let (email_hash, _) = match hash_random_salt(&email) {
-            Ok(hash) => hash,
-            Err(e) => return Err(From::from(e)),
-        };
 
         // Create the SQL query.
-        let sql = "SELECT * FROM users WHERE email_hash = $email_hash";
+        let sql = "SELECT * FROM users WHERE email = $email";
 
         // Bind the parameters to the query.
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
-        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
+        vars.insert("email".into(), Value::from(email.as_str()));
 
         // Execute the query.
         let found: Result<Vec<User>, surrealdb::Error> = self
@@ -202,17 +189,13 @@ impl Database {
         password: String,
     ) -> Result<User, Box<dyn Error>> {
         // Hash the email.
-        let (email_hash, _) = match hash_random_salt(&email) {
-            Ok(hash) => hash,
-            Err(e) => return Err(From::from(e)),
-        };
 
         // Create the SQL query.
-        let sql = "SELECT * FROM users WHERE email_hash = $email_hash";
+        let sql = "SELECT * FROM users WHERE email = $email";
 
         // Bind the parameters to the query.
         let mut vars: BTreeMap<String, Value> = BTreeMap::new();
-        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
+        vars.insert("email".into(), Value::from(email.as_str()));
 
         // Execute the query.
         let found: Result<Vec<User>, surrealdb::Error> = self

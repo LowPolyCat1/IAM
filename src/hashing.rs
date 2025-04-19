@@ -1,7 +1,7 @@
 use argon2::{
     password_hash::{
-        rand_core::OsRng, Error as Argon2Error, PasswordHash, PasswordHasher, PasswordVerifier,
-        SaltString,
+        rand_core::OsRng, Error as Argon2Error, PasswordHash, PasswordHashString, PasswordHasher,
+        PasswordVerifier, SaltString,
     },
     Argon2,
 };
@@ -17,7 +17,7 @@ use std::error::Error;
 /// # Returns
 ///
 /// A result containing the hashed password and the salt, or an error if hashing fails.
-pub fn hash_random_salt(unhashed: &str) -> Result<(String, String), Argon2Error> {
+pub fn hash_random_salt(unhashed: &str) -> Result<PasswordHashString, Argon2Error> {
     // Generate a random salt.
     let salt = SaltString::generate(&mut OsRng);
 
@@ -35,10 +35,10 @@ pub fn hash_random_salt(unhashed: &str) -> Result<(String, String), Argon2Error>
             let error: Box<dyn Error> = format!("Error hashing unhashed: {}", err).into();
             Argon2Error::Password
         })?
-        .to_string();
+        .serialize();
 
     // Return the hashed password and the salt.
-    Ok((hashed_password, salt.to_string()))
+    Ok(hashed_password)
 }
 
 /// Verifies a password against a password hash using Argon2id and constant-time comparison.
