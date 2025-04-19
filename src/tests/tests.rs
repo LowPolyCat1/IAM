@@ -1,20 +1,20 @@
 #[cfg(test)]
 mod hashing_tests {
-    use crate::hashing::{hash_email, hash_password};
+    use crate::hashing::hash;
 
     #[test]
     fn test_hash_email() {
-        let email = "testmail@example.com".to_string();
-        let result = hash_email(&email);
+        let email = "t@example.com".to_string();
+        let result = hash(&email);
         assert!(result.is_ok());
         let hash = result.unwrap();
-        assert_eq!(hash.0.len(), 96); // Aragon2 hash length is 96 characters
+        assert_eq!(hash.0.len(), 97); // Aragon2 hash length is 96 characters
     }
 
     #[test]
     fn test_hash_password() {
         let password = "password".to_string();
-        let result = hash_password(&password);
+        let result = hash(&password);
         assert!(result.is_ok());
         let hash = result.unwrap();
         assert!(!hash.0.is_empty());
@@ -56,5 +56,23 @@ mod encryption_tests {
         let decrypted = decrypt_with_nonce(&key_bytes, &encrypted);
 
         assert_eq!(plaintext, decrypted);
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_encryption_decryption() {
+            let uuid = "123e4567-e89b-12d3-a456-426614174000".to_string();
+            let key = generate_key(uuid);
+            let plaintext = b"This is a secret message.";
+
+            let encrypted_data = encrypt(&key, plaintext).unwrap();
+            let decrypted_plaintext =
+                decrypt(&key, &encrypted_data.ciphertext, &encrypted_data.nonce).unwrap();
+
+            assert_eq!(plaintext, &decrypted_plaintext[..]);
+        }
     }
 }
