@@ -1,6 +1,8 @@
 use argon2::{password_hash, Argon2, PasswordHasher};
 use base64::Engine;
 use dotenvy::var;
+use rand::rng;
+use rand_core::RngCore;
 use sha2::{Digest, Sha256};
 use std::error::Error;
 
@@ -47,5 +49,11 @@ pub fn hash_password(password: String, uuid: String) -> Result<String, Box<dyn E
             Err(err) => return Err(From::from(err)),
         };
 
-    Ok(hashed_password_result)
+    let mut pepper = [0u8; 32];
+    rng().fill_bytes(&mut pepper);
+    let pepper_string = base64::engine::general_purpose::STANDARD.encode(pepper);
+
+    let combined_password = format!("{}{}", hashed_password_result, pepper_string);
+
+    Ok(combined_password)
 }

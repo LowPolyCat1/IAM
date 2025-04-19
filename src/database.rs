@@ -37,7 +37,7 @@ impl Database {
         let encrypted_lastname = encrypt_with_random_nonce(&key_bytes, &lastname);
         let encrypted_email = encrypt_with_random_nonce(&key_bytes, &email);
 
-        let hashed_password_result = match hash_password(password, uuid.clone()) {
+        let encrypted_password = match hash_password(password, uuid.clone()) {
             Ok(hash) => hash,
             Err(e) => return Err(From::from(e)),
         };
@@ -47,7 +47,7 @@ impl Database {
             Err(e) => return Err(e),
         };
 
-        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password = $password, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();\nDEFINE INDEX users_id ON users FIELDS id UNIQUE;";
+        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, encrypted_password = $encrypted_password, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();\nDEFINE INDEX users_id ON users FIELDS id UNIQUE;";
 
         let created: Result<Vec<String>, surrealdb::Error> = self
             .db
@@ -56,7 +56,7 @@ impl Database {
             .bind(("encrypted_firstname", encrypted_firstname))
             .bind(("encrypted_lastname", encrypted_lastname))
             .bind(("username", username))
-            .bind(("password", hashed_password_result))
+            .bind(("encrypted_password", encrypted_password))
             .bind(("encrypted_email", encrypted_email))
             .bind(("email_hash", email_hash))
             .await
@@ -100,6 +100,59 @@ impl Database {
                 user[3] = email;
 
                 Ok(user)
+            }
+            Err(error) => Err(From::from(error)),
+        }
+    }
+
+    pub async fn authenticate_user(
+        &self,
+        email: String,
+        password: String,
+    ) -> Result<Vec<String>, Box<dyn Error>> {
+        let email_hash = match hash_email(&email) {
+            Ok(hash) => hash,
+            Err(e) => return Err(e),
+        };
+
+        let found: Result<Vec<String>, surrealdb::Error> = self
+            .db
+            .query("SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, encrypted_password FROM users WHERE email_hash = $email_hash")
+            .bind(("email_hash", email_hash))
+            .await
+            .map(|mut response| response.take(0).unwrap());
+
+        match found {
+            Ok(mut user) => {
+                let uuid = user[0].clone();
+                let key = generate_key(uuid.clone());
+                let key_bytes: [u8; 32] = key.into();
+
+                let encrypted_firstname = user.get(1).map(|s| s.clone()).unwrap_or_default();
+                let encrypted_lastname = user.get(2).map(|s| s.clone()).unwrap_or_default();
+                let encrypted_email = user.get(3).map(|s| s.clone()).unwrap_or_default();
+                let encrypted_password = user.get(4).map(|s| s.clone()).unwrap_or_default();
+
+                let firstname =
+                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_firstname);
+                let lastname =
+                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
+                let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
+
+                let combined_password = match hash_password(password, uuid.clone()) {
+                    Ok(hash) => hash,
+                    Err(e) => return Err(From::from(e)),
+                };
+
+                if combined_password == encrypted_password {
+                    user[1] = firstname;
+                    user[2] = lastname;
+                    user[3] = email;
+
+                    Ok(user)
+                } else {
+                    Err(From::from("Invalid password".to_string()))
+                }
             }
             Err(error) => Err(From::from(error)),
         }
