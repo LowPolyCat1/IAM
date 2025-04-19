@@ -27,10 +27,12 @@ mod encryption_tests {
     use crate::encryption::{
         decrypt, decrypt_with_nonce, encrypt, encrypt_with_random_nonce, generate_key,
     };
+    use std::env::var;
 
     #[test]
     fn test_encrypt_decrypt() {
         // Set the ENCRYPTION_KEY environment variable for testing
+        let original_key = std::env::var("ENCRYPTION_KEY");
         std::env::set_var("ENCRYPTION_KEY", "test_encryption_key");
 
         let key = generate_key();
@@ -41,11 +43,19 @@ mod encryption_tests {
             decrypt(&key, &encrypted_data.ciphertext, &encrypted_data.nonce).unwrap();
 
         assert_eq!(plaintext, &decrypted_plaintext[..]);
+
+        // Restore the original ENCRYPTION_KEY environment variable
+        if let Ok(key) = original_key {
+            std::env::set_var("ENCRYPTION_KEY", key);
+        } else {
+            std::env::remove_var("ENCRYPTION_KEY");
+        }
     }
 
     #[test]
     fn test_encrypt_with_random_nonce_decrypt_with_nonce() {
         // Set the ENCRYPTION_KEY environment variable for testing
+        let original_key = std::env::var("ENCRYPTION_KEY");
         std::env::set_var("ENCRYPTION_KEY", "test_encryption_key");
 
         let key_bytes: [u8; 32] = [0u8; 32];
@@ -55,5 +65,12 @@ mod encryption_tests {
         let decrypted = decrypt_with_nonce(&key_bytes, &encrypted);
 
         assert_eq!(plaintext, decrypted);
+
+        // Restore the original ENCRYPTION_KEY environment variable
+        if let Ok(key) = original_key {
+            std::env::set_var("ENCRYPTION_KEY", key);
+        } else {
+            std::env::remove_var("ENCRYPTION_KEY");
+        }
     }
 }
