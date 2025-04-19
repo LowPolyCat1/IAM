@@ -7,10 +7,20 @@ use rand::{rng, RngCore};
 
 use dotenvy::var;
 
-pub fn generate_key(uuid: String) -> Key {
+pub fn generate_key() -> Key {
     let mut key = [0u8; 32];
-    let encryption_key = var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY must be set");
+    let encryption_key = var("ENCRYPTION_KEY").unwrap_or_else(|_| {
+        tracing::warn!("ENCRYPTION_KEY not set, using default key");
+        "\0".repeat(32)
+    });
     let encryption_key_bytes = encryption_key.as_bytes();
+
+    if encryption_key_bytes.len() != 32 {
+        tracing::warn!(
+            "ENCRYPTION_KEY has length {}, expected 32. Padding or truncating.",
+            encryption_key_bytes.len()
+        );
+    }
 
     for i in 0..32 {
         if i < encryption_key_bytes.len() {
