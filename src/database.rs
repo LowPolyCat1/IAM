@@ -2,9 +2,11 @@ use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::hash;
 
 use dotenvy::var;
+use std::collections::BTreeMap;
 use std::error::Error;
 use surrealdb::{
     engine::local::{Db, RocksDb},
+    sql::Value,
     Surreal,
 };
 use uuid::Uuid;
@@ -48,18 +50,41 @@ impl Database {
             Err(e) => return Err(e),
         };
 
-        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash_and_salt = $password_hash_and_salt, salt = $salt, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();\nDEFINE INDEX users_id ON users FIELDS id UNIQUE;";
+        let sql = "CREATE users SET id = $id, encrypted_firstname = $encrypted_firstname, encrypted_lastname = $encrypted_lastname, username = $username, password_hash_and_salt = $password_hash_and_salt, salt = $salt, encrypted_email = $encrypted_email, email_hash = $email_hash, created_at = time::now();";
+
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("id".into(), Value::from(uuid.as_str()));
+        vars.insert(
+            "encrypted_firstname".into(),
+            Value::from(encrypted_firstname.as_str()),
+        );
+        vars.insert(
+            "encrypted_lastname".into(),
+            Value::from(encrypted_lastname.as_str()),
+        );
+        vars.insert("username".into(), Value::from(username.as_str()));
+        let (password_hash, salt) = password_hash_and_salt;
+        vars.insert(
+            "password_hash_and_salt".into(),
+            Value::from(password_hash.as_str()),
+        );
+        vars.insert("salt".into(), Value::from(salt.as_str()));
+        vars.insert(
+            "encrypted_email".into(),
+            Value::from(encrypted_email.as_str()),
+        );
+        vars.insert("email_hash".into(), Value::from(email_hash.0.as_str()));
 
         let created: Result<Vec<String>, surrealdb::Error> = self
             .db
             .query(sql)
-            .bind(("id", uuid))
-            .bind(("encrypted_firstname", encrypted_firstname))
-            .bind(("encrypted_lastname", encrypted_lastname))
-            .bind(("username", username))
-            .bind(("password_hash_and_salt", password_hash_and_salt))
-            .bind(("encrypted_email", encrypted_email))
-            .bind(("email_hash", email_hash))
+            .bind(vars)
+            .await
+            .map(|mut response| response.take(0).unwrap());
+
+        let _: Result<Vec<String>, surrealdb::Error> = self
+            .db
+            .query("DEFINE INDEX users_id ON users FIELDS id UNIQUE")
             .await
             .map(|mut response| response.take(0).unwrap());
 
@@ -73,34 +98,20 @@ impl Database {
         &self,
         email_hash: String,
     ) -> Result<Vec<String>, Box<dyn Error>> {
+        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email FROM users WHERE email_hash = $email_hash";
+
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("email_hash".into(), Value::from(email_hash.as_str()));
+
         let found: Result<Vec<String>, surrealdb::Error> = self
             .db
-            .query("SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email FROM users WHERE email_hash = $email_hash")
-            .bind(("email_hash", email_hash))
+            .query(sql)
+            .bind(vars)
             .await
             .map(|mut response| response.take(0).unwrap());
 
         match found {
-            Ok(mut user) => {
-                let key = generate_key();
-                let key_bytes: [u8; 32] = key.into();
-
-                let encrypted_firstname = user.get(1).map(|s| s.clone()).unwrap_or_default();
-                let encrypted_lastname = user.get(2).map(|s| s.clone()).unwrap_or_default();
-                let encrypted_email = user.get(3).map(|s| s.clone()).unwrap_or_default();
-
-                let firstname =
-                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_firstname);
-                let lastname =
-                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
-                let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
-
-                user[1] = firstname;
-                user[2] = lastname;
-                user[3] = email;
-
-                Ok(user)
-            }
+            Ok(user) => Ok(user),
             Err(error) => Err(From::from(error)),
         }
     }
@@ -115,28 +126,25 @@ impl Database {
             Err(e) => return Err(From::from(e)),
         };
 
+        let sql = "SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, password_hash_and_salt, salt FROM users WHERE email_hash = $email_hash";
+
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("email_hash".into(), Value::from(email_hash.0.as_str()));
+
         let found: Result<Vec<String>, surrealdb::Error> = self
             .db
-            .query("SELECT *, encrypted_firstname, encrypted_lastname, encrypted_email, password_hash_and_salt, salt FROM users WHERE email_hash = $email_hash")
-            .bind(("email_hash", email_hash))
+            .query(sql)
+            .bind(vars)
             .await
             .map(|mut response| response.take(0).unwrap());
 
         match found {
-            Ok(mut user) => {
-                let key = generate_key();
-                let key_bytes: [u8; 32] = key.into();
+            Ok(user) => {
+                if user.is_empty() {
+                    return Err(From::from("User not found".to_string()));
+                }
 
-                let encrypted_firstname = user.get(1).map(|s| s.clone()).unwrap_or_default();
-                let encrypted_lastname = user.get(2).map(|s| s.clone()).unwrap_or_default();
-                let encrypted_email = user.get(3).map(|s| s.clone()).unwrap_or_default();
                 let password_hash_and_salt = user.get(4).map(|s| s.clone()).unwrap_or_default();
-
-                let firstname =
-                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_firstname);
-                let lastname =
-                    crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_lastname);
-                let email = crate::encryption::decrypt_with_nonce(&key_bytes, &encrypted_email);
 
                 let (combined_password, _) = match hash(&password) {
                     Ok(result) => (result.0, result.1),
@@ -144,10 +152,6 @@ impl Database {
                 };
 
                 if combined_password == password_hash_and_salt {
-                    user[1] = firstname;
-                    user[2] = lastname;
-                    user[3] = email;
-
                     Ok(user)
                 } else {
                     Err(From::from("Invalid password".to_string()))
