@@ -170,7 +170,7 @@ _For more examples, please refer to the [Documentation]()_
   * [ ] /change_email
   * [ ] /change_password
   * [ ] /reset_password
-* [ ] Portability via Docker
+* [x] Portability via Docker
 * [ ] JWT Token authentication
 * [ ] Rate limiting
 * [ ] HTTPS everywhere for data in transit
