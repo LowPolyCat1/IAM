@@ -95,7 +95,7 @@ The project uses Actix-web for building the server and provides basic endpoints 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get a local copy up and running follow these simple example steps.
+To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
@@ -110,13 +110,25 @@ To get a local copy up and running follow these simple example steps.
     git clone https://github.com/lowpolycat1/IAM.git
     ```
 
-2. Build the project
+2. Rename the [env_example](./env_example) file to `.env` and change the settings
+
+    ```
+    SERVER_IP = "0.0.0.0"
+    SERVER_PORT = "8080"
+    DOCKER_EXPOSED_PORT = "8080"
+    DATABASE_PATH = "rocksdb:/var/lib/surrealdb"
+    ENCRYPTION_KEY = "00000000000000000000000000000000"
+    DATABASE_NAMESPACE = "test"
+    DATABASE_NAME = "test"
+    ```
+
+3. Build the project
 
     ```sh
     cargo build --release
     ```
 
-3. Run the project
+4. Run the project
 
     ```sh
     cargo run --release
@@ -124,7 +136,7 @@ To get a local copy up and running follow these simple example steps.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Docker
+### Docker
 
 1. Clone the repo
 
@@ -132,19 +144,35 @@ To get a local copy up and running follow these simple example steps.
     git clone https://github.com/lowpolycat1/IAM.git
     ```
 
-2. Build the project
+2. Rename the [env_example](./env_example) file to `.env` and change the settings
+
+    ```
+    SERVER_IP = "0.0.0.0"
+    SERVER_PORT = "8080"
+    DOCKER_EXPOSED_PORT = "8080"
+    DATABASE_PATH = "rocksdb:/var/lib/surrealdb"
+    ENCRYPTION_KEY = "00000000000000000000000000000000"
+    DATABASE_NAMESPACE = "test"
+    DATABASE_NAME = "test"
+    ```
+
+3. Build the project
 
     ```sh
     docker build -t iam .
     ```
 
-2. Run the project
+4. Run the project
 
     ```sh
-    docker run iam
+    docker run -d -p {SERVER_IP}:{SERVER_PORT}:{DOCKER_EXPOSED_PORT} iam
     ```
 
-_Note: Docker is building this in --release mode: this may take _**A GOOD WHILE**_ (7+ min) if you want this to be faster you can remove the `--release` in the Dockerfile_
+#### Python Script
+
+Alternatively you can simply run the [python script](/run_docker.py)
+
+_Note: Docker is building this in --release mode: this may take _**A GOOD WHILE**_ (10+ min) if you want this to be faster you can remove the `--release` in the Dockerfile_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
