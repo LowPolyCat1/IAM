@@ -8,9 +8,6 @@ use tracing_appender::rolling::Rotation;
 use validator::Validate;
 use validator_derive::Validate;
 
-// Fallback IP address if not found in environment variables
-const FALLBACK_IP: &str = "127.0.0.1";
-
 /// Struct representing the login request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct LoginRequest {
@@ -19,9 +16,6 @@ struct LoginRequest {
     #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
     password: String,
 }
-// Fallback port if not found in environment variables
-const FALLBACK_PORT: &str = "8080";
-
 /// Struct representing the register request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct RegisterRequest {
@@ -109,7 +103,7 @@ fn get_server_ip() -> Result<String, CustomError> {
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_IP | {}", error);
-            Ok(FALLBACK_IP.to_string())
+            Err(CustomError::EnvironmentVariableError(error.to_string()))
         }
     }
 }
@@ -123,7 +117,7 @@ fn get_server_port_string() -> Result<String, CustomError> {
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_PORT | {}", error);
-            Ok(FALLBACK_PORT.to_string())
+            Err(CustomError::EnvironmentVariableError(error.to_string()))
         }
     }
 }
@@ -151,12 +145,8 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
         }
         Err(error) => {
             tracing::error!("Error parsing port | {}", error);
-            tracing::warn!("using fallback port {}", FALLBACK_PORT);
             // Remove unwrap() and propagate the error
-            let fallback_port = FALLBACK_PORT
-                .parse::<u16>()
-                .map_err(|e| CustomError::EnvironmentVariableError(e.to_string()))?;
-            Ok(fallback_port)
+            Err(CustomError::ParsingServerPortError(error.to_string()))
         }
     }
 }

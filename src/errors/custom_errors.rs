@@ -36,6 +36,8 @@ pub enum CustomError {
     /// Represents an error loading environment variables.
     #[error("Environment variable error: {0}")]
     EnvironmentVariableError(String),
+    #[error("Environment variable error: {0}")]
+    ParsingServerPortError(String),
 }
 
 impl From<surrealdb::Error> for CustomError {

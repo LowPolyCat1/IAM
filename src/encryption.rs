@@ -8,6 +8,8 @@ use rand::rng;
 use rand::RngCore;
 use thiserror::Error;
 
+use crate::errors::custom_errors::CustomError;
+
 #[derive(Error, Debug)]
 pub enum EncryptionError {
     #[error("Encryption error")]
@@ -16,14 +18,13 @@ pub enum EncryptionError {
     DecryptionError,
 }
 
-pub fn generate_key() -> Key {
+pub fn generate_key() -> Result<Key, CustomError> {
     let mut key = [0u8; 32];
     let encryption_key = match var("ENCRYPTION_KEY") {
         Ok(key) => key,
-        Err(_) => {
-            tracing::error!("couldn't find ENCRYPTION_KEY");
-            tracing::warn!("using fallback for ENCRYPTION_KEY");
-            "ENCRYPTION KEY FALLBACK".to_string()
+        Err(error) => {
+            tracing::error!("couldn't find ENCRYPTION_KEY: {}", error);
+            return Err(CustomError::EnvironmentVariableError(error.to_string()));
         }
     };
     let encryption_key_bytes = encryption_key.as_bytes();
@@ -41,7 +42,7 @@ pub fn generate_key() -> Key {
         }
     }
 
-    *Key::from_slice(&key)
+    Ok(*Key::from_slice(&key))
 }
 
 pub struct EncryptedData {

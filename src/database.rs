@@ -116,7 +116,13 @@ impl Database {
         // Generate a new UUID for the user.
         let uuid = Uuid::new_v4().to_string();
         // Generate a new encryption key.
-        let key = generate_key();
+        let key = match generate_key() {
+            Ok(key) => key,
+            Err(error) => {
+                tracing::error!("Couldn't get key: {}", error);
+                return Err(error);
+            }
+        };
         let key_bytes: [u8; 32] = key.into();
 
         // Encrypt the user's personal information.
