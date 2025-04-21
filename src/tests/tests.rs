@@ -6,10 +6,16 @@ mod tests {
     use std::env;
 
     #[test]
-    fn test_hashing() {
+    fn test_hashing_correct() {
         let password = "password123";
         let hashed_password = hash_random_salt(password).unwrap();
         assert!(verify_password(password, &hashed_password).is_ok());
+    }
+
+    #[test]
+    fn test_hashing_incorrect() {
+        let password = "password123";
+        let hashed_password = hash_random_salt(password).unwrap();
         assert!(verify_password("wrong_password", &hashed_password).is_err());
     }
 
