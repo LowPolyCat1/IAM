@@ -61,13 +61,12 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+[![Product Name Screen Shot][product-screenshot]]()
 
 This project is a demonstration of an Identity and Access Management (IAM) system built with Rust. It showcases various security features and best practices, including:
 
-* Secure password handling using Argon2
-* User data encryption with ChaCha20-Poly1305
-* Salt + Pepper hashing and encryption
+* Secure password handling (hashing) using Argon2id with salt
+* User data encryption and decryption with ChaCha20-Poly130
 * Configuration via environment variables
 
 The project uses Actix-web for building the server and provides basic endpoints for user registration and health checks. It also includes modules for database interaction, encryption, hashing, and logging.
@@ -114,14 +113,38 @@ To get a local copy up and running follow these simple example steps.
 2. Build the project
 
     ```sh
-    cargo build
+    cargo build --release
     ```
 
 3. Run the project
 
     ```sh
-    cargo run
+    cargo run --release
     ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Docker
+
+1. Clone the repo
+
+    ```sh
+    git clone https://github.com/lowpolycat1/IAM.git
+    ```
+
+2. Build the project
+
+    ```sh
+    docker build -t iam .
+    ```
+
+2. Run the project
+
+    ```sh
+    docker run iam
+    ```
+
+_Note: Docker is building this in --release mode: this may take _**A GOOD WHILE**_ (7+ min) if you want this to be faster you can remove the `--release` in the Dockerfile_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -130,21 +153,27 @@ To get a local copy up and running follow these simple example steps.
 
 This is a demonstration of the project and can be used as a foundation to build upon. Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+_For more examples, please refer to the [Documentation]()_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ROADMAP -->
-## Features
+## Roadmap
 
-* Secure password handling using Argon2
-* User data encryption with ChaCha20-Poly1305
-* Salt + Pepper hashing and encryption
-* Secure key management using .env files and Docker (WIP) secrets
-* Secure authentication and logging (WIP)
-* Rate limiting to prevent brute-force attacks (WIP)
-* Password reset functionality  (WIP)
-* HTTPS everywhere (TLS) for data in transit (WIP)
+* [x] Secure config management using .env
+* [x] Password hashing using Argon2
+* [x] Data encryption using ChaCha20-Poly130
+* [ ] API endpoints
+  * [x] /register
+  * [x] /login
+  * [ ] /change_username
+  * [ ] /change_email
+  * [ ] /change_password
+  * [ ] /reset_password
+* [ ] Portability via Docker
+* [ ] JWT Token authentication
+* [ ] Rate limiting
+* [ ] HTTPS everywhere for data in transit
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
