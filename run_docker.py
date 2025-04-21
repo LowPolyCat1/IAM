@@ -28,6 +28,7 @@ if __name__ == "__main__":
     run_command = [
         "docker",
         "run",
+        "-d",
         "-p",
         f"{server_ip}:{server_port}:{docker_exposed_port}",
         image_name,
