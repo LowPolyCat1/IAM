@@ -8,9 +8,6 @@ use tracing_appender::rolling::Rotation;
 use validator::Validate;
 use validator_derive::Validate;
 
-// Fallback IP address if not found in environment variables
-const FALLBACK_IP: &str = "127.0.0.1";
-
 /// Struct representing the login request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct LoginRequest {
@@ -19,9 +16,6 @@ struct LoginRequest {
     #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
     password: String,
 }
-// Fallback port if not found in environment variables
-const FALLBACK_PORT: &str = "8080";
-
 /// Struct representing the register request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct RegisterRequest {
@@ -44,7 +38,11 @@ pub struct AppState {
     pub db: Database,
 }
 
-/// Starts the Actix Web server
+/// Starts the Actix Web server.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing subscriber for logging
     let rolling = tracing_appender::rolling::Builder::new()
@@ -100,7 +98,11 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Gets the server IP address from environment variables
+/// Gets the server IP address from environment variables.
+///
+/// # Returns
+///
+/// A `Result` containing the server IP address or a `CustomError` if an error occurs.
 fn get_server_ip() -> Result<String, CustomError> {
     match var("SERVER_IP") {
         Ok(server_ip) => {
@@ -109,12 +111,16 @@ fn get_server_ip() -> Result<String, CustomError> {
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_IP | {}", error);
-            Ok(FALLBACK_IP.to_string())
+            Err(CustomError::EnvironmentVariableError(error.to_string()))
         }
     }
 }
 
-/// Gets the server port as a string from environment variables
+/// Gets the server port as a string from environment variables.
+///
+/// # Returns
+///
+/// A `Result` containing the server port as a string or a `CustomError` if an error occurs.
 fn get_server_port_string() -> Result<String, CustomError> {
     match var("SERVER_PORT") {
         Ok(server_port) => {
@@ -123,12 +129,16 @@ fn get_server_port_string() -> Result<String, CustomError> {
         }
         Err(error) => {
             tracing::error!("Couldn't find SERVER_PORT | {}", error);
-            Ok(FALLBACK_PORT.to_string())
+            Err(CustomError::EnvironmentVariableError(error.to_string()))
         }
     }
 }
 
-/// Loads environment variables from the .env file
+/// Loads environment variables from the .env file.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn load_dotenv() -> Result<(), CustomError> {
     match dotenvy::dotenv() {
         Ok(pathbuf) => {
@@ -143,6 +153,15 @@ fn load_dotenv() -> Result<(), CustomError> {
 }
 
 /// Parses the server port string into a u16
+/// Parses the server port string into a u16.
+///
+/// # Arguments
+///
+/// * `server_port_string` - The server port as a string.
+///
+/// # Returns
+///
+/// A `Result` containing the server port as a u16 or a `CustomError` if an error occurs.
 fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
     match server_port_string.parse::<u16>() {
         Ok(port) => {
@@ -151,17 +170,23 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
         }
         Err(error) => {
             tracing::error!("Error parsing port | {}", error);
-            tracing::warn!("using fallback port {}", FALLBACK_PORT);
             // Remove unwrap() and propagate the error
-            let fallback_port = FALLBACK_PORT
-                .parse::<u16>()
-                .map_err(|e| CustomError::EnvironmentVariableError(e.to_string()))?;
-            Ok(fallback_port)
+            Err(CustomError::ParsingServerPortError(error.to_string()))
         }
     }
 }
 
 /// Registers a new user
+/// Registers a new user.
+///
+/// # Arguments
+///
+/// * `req` - The register request.
+/// * `data` - The application state.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 #[post("/register")]
 async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
     tracing::info!("Registering user");
@@ -203,6 +228,16 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
 }
 
 /// Authenticates a user
+/// Authenticates a user.
+///
+/// # Arguments
+///
+/// * `req` - The login request.
+/// * `data` - The application state.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 #[post("/login")]
 async fn authenticate_user(
     req: web::Json<LoginRequest>,
@@ -239,7 +274,11 @@ async fn authenticate_user(
     }
 }
 
-/// Pings the server
+/// Pings the server.
+///
+/// # Returns
+///
+/// A `Result` containing the string "pong".
 #[get("/ping")]
 async fn ping() -> impl Responder {
     "pong"

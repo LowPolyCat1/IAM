@@ -7,6 +7,9 @@ description = "A Identity and Access Management System"
 license = "MIT"
 repository = "https://github.com/lowpolycat1/IAM"
 
+[[bin]]
+name = "iam"
+path = "src/main.rs"
 
 [dependencies]
 tracing = "0.1.41"
@@ -41,5 +44,4 @@ codegen-units = 1
 opt-level = 3
 debug = false
 panic = "abort"
-rpath = false
-strip = "none"
+# rpath = false
