@@ -8,15 +8,15 @@ use argon2::{
 
 use std::error::Error as StdError;
 
-/// Hashes a password using Argon2id.
+/// Hashes the given string with a random salt using Argon2.
 ///
 /// # Arguments
 ///
-/// * `unhashed` - The data to hash.
+/// * `unhashed` - The string to be hashed.
 ///
 /// # Returns
 ///
-/// A result containing the hashed password and the salt, or an error if hashing fails.
+/// A `Result` containing the hashed string or an `Argon2Error` if an error occurs.
 pub fn hash_random_salt(unhashed: &str) -> Result<String, Argon2Error> {
     // Generate a random salt.
     let salt = SaltString::generate(&mut OsRng);

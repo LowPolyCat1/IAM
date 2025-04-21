@@ -18,6 +18,11 @@ pub enum EncryptionError {
     DecryptionError,
 }
 
+/// Generates a new encryption key.
+///
+/// # Returns
+///
+/// A `Result` containing the new key or a `CustomError` if an error occurs.
 pub fn generate_key() -> Result<Key, CustomError> {
     let mut key = [0u8; 32];
     let encryption_key = match var("ENCRYPTION_KEY") {
@@ -50,6 +55,16 @@ pub struct EncryptedData {
     pub nonce: Nonce,
 }
 
+/// Encrypts the given plaintext with the given key.
+///
+/// # Arguments
+///
+/// * `key` - The encryption key.
+/// * `plaintext` - The plaintext to encrypt.
+///
+/// # Returns
+///
+/// A `Result` containing the encrypted data or an `EncryptionError` if an error occurs.
 pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionError> {
     let nonce = generate_nonce();
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
@@ -59,6 +74,17 @@ pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionE
     Ok(EncryptedData { ciphertext, nonce })
 }
 
+/// Decrypts the given ciphertext with the given key and nonce.
+///
+/// # Arguments
+///
+/// * `key` - The encryption key.
+/// * `ciphertext` - The ciphertext to decrypt.
+/// * `nonce` - The nonce used to encrypt the ciphertext.
+///
+/// # Returns
+///
+/// A `Result` containing the decrypted data or an `EncryptionError` if an error occurs.
 pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, EncryptionError> {
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
     let decrypted_data = aead
@@ -74,7 +100,16 @@ fn generate_nonce() -> Nonce {
     *Nonce::from_slice(&nonce)
 }
 
-/// Encrypts data with a random nonce. Returns base64-encoded string (nonce + ciphertext).
+/// Encrypts the given plaintext with a random nonce and returns a base64-encoded string.
+///
+/// # Arguments
+///
+/// * `key_bytes` - The encryption key.
+/// * `plaintext` - The plaintext to encrypt.
+///
+/// # Returns
+///
+/// A `Result` containing the base64-encoded string or an `EncryptionError` if an error occurs.
 pub fn encrypt_with_random_nonce(
     key_bytes: &[u8; 32],
     plaintext: &str,
@@ -101,7 +136,16 @@ pub fn encrypt_with_random_nonce(
     Ok(general_purpose::STANDARD.encode(combined))
 }
 
-/// Decrypts base64-encoded (nonce + ciphertext) string.
+/// Decrypts the given base64-encoded string with the given key.
+///
+/// # Arguments
+///
+/// * `key_bytes` - The encryption key.
+/// * `combined_base64` - The base64-encoded string to decrypt.
+///
+/// # Returns
+///
+/// A `Result` containing the decrypted string or an `EncryptionError` if an error occurs.
 pub fn decrypt_with_nonce(
     key_bytes: &[u8; 32],
     combined_base64: &str,

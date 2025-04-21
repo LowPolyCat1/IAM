@@ -36,6 +36,10 @@ use crate::errors::custom_errors::CustomError;
 
 impl Database {
     /// Creates a new database connection.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the new database connection or an error if the connection fails.
     pub async fn new() -> Result<Self, crate::errors::custom_errors::CustomError> {
         // Get the database path from the environment variables.
         let database_path = match var("DATABASE_PATH") {
@@ -88,7 +92,7 @@ impl Database {
     ///
     /// # Returns
     ///
-    /// A result containing a success message or an error if registration fails.
+    /// A `Result` containing a boolean indicating success or failure.
     pub async fn register(
         &self,
         firstname: String,
@@ -192,7 +196,7 @@ impl Database {
     ///
     /// # Returns
     ///
-    /// A result containing the user's data or an error if authentication fails.
+    /// A `Result` containing the user's data or a `CustomError` if authentication fails.
     pub async fn authenticate_user(
         &self,
         email: String,
