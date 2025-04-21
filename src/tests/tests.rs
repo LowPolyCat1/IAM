@@ -18,7 +18,6 @@ mod encryption_tests {
     use crate::encryption::{
         decrypt, decrypt_with_nonce, encrypt, encrypt_with_random_nonce, generate_key,
     };
-    use std::env::var;
 
     #[test]
     fn test_encrypt_decrypt() {
@@ -26,7 +25,7 @@ mod encryption_tests {
         let original_key = std::env::var("ENCRYPTION_KEY");
         std::env::set_var("ENCRYPTION_KEY", "test_encryption_key");
 
-        let key = generate_key();
+        let key = generate_key().unwrap();
         let plaintext = b"This is a secret message.";
 
         let encrypted_data = encrypt(&key, plaintext).unwrap();
