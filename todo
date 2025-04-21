@@ -1,13 +1,7 @@
 # todo
 
-Error Handling: mostly missing
-
-Input Validation: more strict
-
-Logging: mostly missing
-
 Code Clarity
 
-CSPRNG
+password changing
 
-Using migration service
+email changing

@@ -174,6 +174,8 @@ _For more examples, please refer to the [Documentation]()_
 * [ ] JWT Token authentication
 * [ ] Rate limiting
 * [ ] HTTPS everywhere for data in transit
+* [ ] Implementing database Migration service
+* [ ] Using a Cryptographically secure RNG
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
