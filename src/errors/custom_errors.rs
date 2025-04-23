@@ -38,6 +38,8 @@ pub enum CustomError {
     EnvironmentVariableError(String),
     #[error("Environment variable error: {0}")]
     ParsingServerPortError(String),
+    #[error("Environment variable error: {0}")]
+    GovernorCreationError(String),
 }
 
 impl From<surrealdb::Error> for CustomError {

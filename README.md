@@ -200,7 +200,7 @@ _For more examples, please refer to the [Documentation]()_
   * [ ] /reset_password
 * [x] Portability via Docker
 * [ ] JWT Token authentication
-* [ ] Rate limiting
+* [x] Rate limiting
 * [ ] HTTPS everywhere for data in transit
 * [ ] Implementing database Migration service
 * [ ] Using a Cryptographically secure RNG

@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::errors::custom_errors::CustomError;
-use actix_web::{self, get, post, web, App, HttpResponse, Responder};
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::{get, post, web, App, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
@@ -77,11 +78,26 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let server_port = parse_server_port(&server_port_string)?;
     tracing::info!("Setting up server");
 
+    let governor_conf = match GovernorConfigBuilder::default()
+        .requests_per_second(2)
+        .seconds_per_request(1)
+        .burst_size(10)
+        .finish()
+    {
+        Some(governor) => governor,
+        None => {
+            return Err(Box::new(CustomError::GovernorCreationError(
+                "Unknown".to_string(),
+            )));
+        }
+    };
+
     // Create the Actix Web server
     actix_web::HttpServer::new(move || {
         App::new()
             // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))
+            .wrap(Governor::new(&governor_conf))
             // Register the ping route
             .service(ping)
             // Register the register route
@@ -138,7 +154,7 @@ fn get_server_port_string() -> Result<String, CustomError> {
 ///
 /// # Returns
 ///
-/// A `Result` indicating success or failure.
+/// A `Result` containing the server IP address or a `CustomError` if an error occurs.
 fn load_dotenv() -> Result<(), CustomError> {
     match dotenvy::dotenv() {
         Ok(pathbuf) => {
@@ -233,7 +249,6 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
 /// # Arguments
 ///
 /// * `req` - The login request.
-/// * `data` - The application state.
 ///
 /// # Returns
 ///
