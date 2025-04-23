@@ -274,9 +274,17 @@ async fn authenticate_user(
 
     // Authenticate the user
     match db.authenticate_user(email, password).await {
-        Ok(_user) => {
+        Ok(user) => {
             tracing::info!("User authenticated successfully");
-            HttpResponse::Ok().json(json!({"success": true}))
+            // Generate JWT
+            match crate::jwt::generate_jwt(user.id.to_string()) {
+                Ok(token) => HttpResponse::Ok().json(json!({"success": true, "token": token})),
+                Err(error) => {
+                    tracing::error!("Error generating JWT: {}", error);
+                    HttpResponse::InternalServerError()
+                        .json(json!({"success": false, "error": "Failed to generate token"}))
+                }
+            }
         }
         Err(error) => {
             tracing::error!("Error authenticating user: {}", error);
