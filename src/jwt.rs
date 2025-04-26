@@ -5,9 +5,9 @@ use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String, // Subject (user ID)
-    exp: usize,  // Expiration time (timestamp)
-    iat: usize,  // Issued at (timestamp)
+    pub sub: String, // Subject (user ID)
+    exp: usize,      // Expiration time (timestamp)
+    iat: usize,      // Issued at (timestamp)
 }
 
 const SECRET_KEY_ENV: &str = "JWT_SECRET";

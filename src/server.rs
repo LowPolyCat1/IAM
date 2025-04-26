@@ -1,7 +1,9 @@
 use crate::database::Database;
 use crate::errors::custom_errors::CustomError;
+use crate::middleware::AuthenticationMiddlewareFactory;
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::{get, post, web, App, HttpResponse, Responder};
+use actix_web::HttpRequest;
+use actix_web::{get, post, web, App, HttpMessage, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
@@ -49,7 +51,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let rolling = tracing_appender::rolling::Builder::new()
         .rotation(Rotation::DAILY)
         .filename_suffix("log")
-        .build("D:/VSC/Rust/Projects/current/IAM/logs")?;
+        .build("D:/VSC/Rust/Projects/current/IAM/logs")?; // Only here until I get logging middleware to work
     tracing_subscriber::fmt().with_writer(rolling).init();
     tracing::info!("Starting Programm!");
 
@@ -98,6 +100,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))
             .wrap(Governor::new(&governor_conf))
+            .wrap(AuthenticationMiddlewareFactory::new())
             // Register the ping route
             .service(ping)
             // Register the register route
@@ -204,8 +207,20 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
 ///
 /// A `Result` indicating success or failure.
 #[post("/register")]
-async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+async fn register(
+    req: web::Json<RegisterRequest>,
+    data: web::Data<AppState>,
+    http_req: HttpRequest,
+) -> impl Responder {
     tracing::info!("Registering user");
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    tracing::info!("User ID from token: {}", user_id);
+
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
         tracing::warn!("Validation error: {:?}", validation_errors);
@@ -303,6 +318,11 @@ async fn authenticate_user(
 ///
 /// A `Result` containing the string "pong".
 #[get("/ping")]
-async fn ping() -> impl Responder {
-    "pong"
+async fn ping(req: HttpRequest) -> impl Responder {
+    let user_id = req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+    format!("pong from user: {}", user_id)
 }

@@ -7,4 +7,5 @@ pub mod errors;
 pub mod hashing;
 pub mod jwt;
 pub mod logging;
+pub mod middleware;
 pub mod server;

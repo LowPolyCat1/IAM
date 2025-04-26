@@ -7,6 +7,7 @@ mod tests {
 
     #[test]
     fn test_hashing_correct() {
+        dotenv().ok();
         let password = "password123";
         let hashed_password = hash_random_salt(password).unwrap();
         assert!(verify_password(password, &hashed_password).is_ok());
@@ -37,5 +38,33 @@ mod tests {
         let key = generate_key().unwrap();
         let key_bytes: [u8; 32] = key.into();
         assert_eq!(key_bytes.len(), 32);
+    }
+
+    use crate::jwt::{extract_user_id_from_jwt, generate_jwt, validate_jwt};
+
+    #[test]
+    fn test_jwt_generation() {
+        dotenv().ok();
+        let user_id = "test_user";
+        let token = generate_jwt(user_id.to_string()).unwrap();
+        assert!(!token.is_empty());
+    }
+
+    #[test]
+    fn test_jwt_validation() {
+        dotenv().ok();
+        let user_id = "test_user";
+        let token = generate_jwt(user_id.to_string()).unwrap();
+        let claims = validate_jwt(&token).unwrap();
+        assert_eq!(claims.sub, user_id);
+    }
+
+    #[test]
+    fn test_jwt_extraction() {
+        dotenv().ok();
+        let user_id = "test_user";
+        let token = generate_jwt(user_id.to_string()).unwrap();
+        let extracted_user_id = extract_user_id_from_jwt(&token).unwrap();
+        assert_eq!(extracted_user_id, user_id);
     }
 }
