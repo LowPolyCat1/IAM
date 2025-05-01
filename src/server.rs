@@ -8,7 +8,6 @@ use crate::middleware::AuthenticationMiddlewareFactory;
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::HttpRequest;
 use actix_web::{get, post, web, App, HttpMessage, HttpResponse, Responder};
-use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
