@@ -19,6 +19,9 @@ pub enum CustomError {
     /// Represents an encryption error.
     #[error("Encryption error")]
     EncryptionError,
+    /// Represents an decryption error.
+    #[error("Decryption error")]
+    DecryptionError,
     /// Represents a database error.
     #[error("Database error: {0}")]
     DatabaseError(String),
