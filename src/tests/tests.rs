@@ -120,7 +120,7 @@ mod tests {
                 .insert_header((header::AUTHORIZATION, "Bearer invalid_token".to_string()))
                 .to_request();
 
-            match test::try_call_service(&app, req).await {
+            let _ = match test::try_call_service(&app, req).await {
                 Ok(res) => Err(format!("Invalid Token returns Response: {:?}", res)),
                 Err(_) => Ok(()),
             };
@@ -139,7 +139,7 @@ mod tests {
 
             let req = test::TestRequest::get().uri("/test").to_request();
 
-            match test::try_call_service(&app, req).await {
+            let _ = match test::try_call_service(&app, req).await {
                 Ok(res) => Err(format!("Missing Token returns Response: {:?}", res)),
                 Err(_) => Ok(()),
             };
