@@ -56,7 +56,6 @@ mod tests {
     #[test]
     fn test_encryption_key_length() {
         crate::tests::tests::setup();
-        env::set_var("ENCRYPTION_KEY", "12345678901234567890123456789012");
         let key = generate_key().unwrap();
         let key_bytes: [u8; 32] = key.into();
         assert_eq!(key_bytes.len(), 32);
