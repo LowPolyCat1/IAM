@@ -229,4 +229,40 @@ impl Database {
             Err(crate::errors::custom_errors::CustomError::UserNotFound)
         }
     }
+
+    pub async fn change_username(
+        &self,
+        user_id: String,
+        new_username: String,
+    ) -> Result<(), crate::errors::custom_errors::CustomError> {
+        // Create the SQL query.
+        let sql = "UPDATE users SET username = $new_username WHERE id = $user_id;";
+
+        // Bind the parameters to the query.
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("user_id".into(), Value::from(user_id.as_str()));
+        vars.insert("new_username".into(), Value::from(new_username.as_str()));
+
+        // Execute the query.
+        self.db.query(sql).bind(vars).await?;
+        Ok(())
+    }
+
+    pub async fn change_password(
+        &self,
+        user_id: String,
+        new_password: String,
+    ) -> Result<(), crate::errors::custom_errors::CustomError> {
+        // Create the SQL query.
+        let sql = "UPDATE users SET username = $new_password WHERE id = $user_id;";
+
+        // Bind the parameters to the query.
+        let mut vars: BTreeMap<String, Value> = BTreeMap::new();
+        vars.insert("user_id".into(), Value::from(user_id.as_str()));
+        vars.insert("new_password".into(), Value::from(new_password.as_str()));
+
+        // Execute the query.
+        self.db.query(sql).bind(vars).await?;
+        Ok(())
+    }
 }

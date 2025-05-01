@@ -34,6 +34,18 @@ struct RegisterRequest {
     email: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Validate)]
+struct ChangeUsernameRequest {
+    #[validate(length(min = 1, message = "Username is required"))]
+    username: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Validate)]
+struct ChangePasswordRequest {
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    password: String,
+}
+
 /// Application state shared across all routes
 #[derive(Clone)]
 pub struct AppState {
@@ -107,6 +119,8 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             .service(register)
             .service(authenticate_user)
             .service(debug)
+            .service(change_username)
+            .service(change_password)
     })
     // Bind the server to the specified IP address and port
     .bind((server_ip, server_port))?
@@ -259,7 +273,6 @@ async fn register(
     }
 }
 
-/// Authenticates a user
 /// Authenticates a user.
 ///
 /// # Arguments
@@ -336,4 +349,74 @@ async fn debug(req: HttpRequest) -> impl Responder {
         .cloned()
         .unwrap_or_else(|| "Unknown".to_string());
     format!("Debug: User ID from token: {}", user_id)
+}
+
+/// Changes the Username of a user.
+///
+/// # Arguments
+///
+/// * `req` - The change username request.
+///
+/// * `http_req` - The http request.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
+#[post("/change_username")]
+async fn change_username(
+    http_req: HttpRequest,
+    req: web::Json<ChangeUsernameRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+    let new_username = req.0.username;
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    match data.db.change_username(user_id, new_username).await {
+        Ok(_) => HttpResponse::Ok().json("Successfully changed username"),
+        Err(_error) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+/// Changes the Password of a user.
+///
+/// # Arguments
+///
+/// * `req` - The change username request.
+///
+/// * `http_req` - The http request.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
+#[post("/change_password")]
+async fn change_password(
+    http_req: HttpRequest,
+    req: web::Json<ChangePasswordRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+    let new_password = req.0.password;
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    match data.db.change_password(user_id, new_password).await {
+        Ok(_) => HttpResponse::Ok().json("Successfully changed password"),
+        Err(_error) => HttpResponse::InternalServerError().finish(),
+    }
 }

@@ -194,9 +194,9 @@ _For more examples, please refer to the [Documentation]()_
 * [ ] API endpoints
   * [x] /register
   * [x] /login
-  * [ ] /change_username
+  * [x] /change_username
   * [ ] /change_email
-  * [ ] /change_password
+  * [x] /change_password
   * [ ] /reset_password
 * [x] Portability via Docker
 * [x] JWT Token authentication
