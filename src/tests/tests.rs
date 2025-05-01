@@ -2,16 +2,27 @@
 //!
 //! This module contains integration tests for the IAM project.
 
+use std::env;
+
+fn setup() {
+    // Load environment variables from GitHub Actions environment
+    if env::var("ENCRYPTION_KEY").is_err() {
+        env::set_var("ENCRYPTION_KEY", "12345678901234567890123456789012");
+    }
+    if env::var("JWT_SECRET").is_err() {
+        env::set_var("JWT_SECRET", "secret");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::encryption::{decrypt_with_nonce, encrypt_with_random_nonce, generate_key};
     use crate::hashing::{hash_random_salt, verify_password};
-    use dotenvy::dotenv;
     use std::env;
 
     #[test]
     fn test_hashing_correct() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         let password = "password123";
         let hashed_password = hash_random_salt(password).unwrap();
         assert!(verify_password(password, &hashed_password).is_ok());
@@ -19,6 +30,7 @@ mod tests {
 
     #[test]
     fn test_hashing_incorrect() {
+        crate::tests::tests::setup();
         let password = "password123";
         let hashed_password = hash_random_salt(password).unwrap();
         assert!(verify_password("wrong_password", &hashed_password).is_err());
@@ -26,7 +38,7 @@ mod tests {
 
     #[test]
     fn test_encryption() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         let key = generate_key().unwrap();
         let key_bytes: [u8; 32] = key.into();
         let plaintext = "This is a secret message.";
@@ -37,7 +49,7 @@ mod tests {
 
     #[test]
     fn test_encryption_key_length() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         env::set_var("ENCRYPTION_KEY", "12345678901234567890123456789012");
         let key = generate_key().unwrap();
         let key_bytes: [u8; 32] = key.into();
@@ -48,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_jwt_generation() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         let user_id = "test_user";
         let token = generate_jwt(user_id.to_string()).unwrap();
         assert!(!token.is_empty());
@@ -56,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_jwt_validation() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         let user_id = "test_user";
         let token = generate_jwt(user_id.to_string()).unwrap();
         let claims = validate_jwt(&token).unwrap();
@@ -65,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_jwt_extraction() {
-        dotenv().ok();
+        crate::tests::tests::setup();
         let user_id = "test_user";
         let token = generate_jwt(user_id.to_string()).unwrap();
         let extracted_user_id = extract_user_id_from_jwt(&token).unwrap();
@@ -84,7 +96,7 @@ mod tests {
 
         #[actix_web::test]
         async fn test_authentication_middleware_valid_token() {
-            dotenvy::dotenv().ok();
+            crate::tests::tests::setup();
             let user_id = "test_user";
             let token = generate_jwt(user_id.to_string()).unwrap();
 
@@ -106,7 +118,7 @@ mod tests {
 
         #[actix_web::test]
         async fn test_authentication_middleware_invalid_token() {
-            dotenvy::dotenv().ok();
+            crate::tests::tests::setup();
 
             let app = test::init_service(
                 App::new()
@@ -128,7 +140,7 @@ mod tests {
 
         #[actix_web::test]
         async fn test_authentication_middleware_missing_token() {
-            dotenvy::dotenv().ok();
+            crate::tests::tests::setup();
 
             let app = test::init_service(
                 App::new()
