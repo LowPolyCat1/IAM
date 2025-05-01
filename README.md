@@ -199,7 +199,7 @@ _For more examples, please refer to the [Documentation]()_
   * [ ] /change_password
   * [ ] /reset_password
 * [x] Portability via Docker
-* [ ] JWT Token authentication
+* [x] JWT Token authentication
 * [x] Rate limiting
 * [ ] HTTPS everywhere for data in transit
 * [ ] Implementing database Migration service
