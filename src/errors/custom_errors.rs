@@ -1,3 +1,7 @@
+//! src/errors/custom_errors.rs
+//!
+//! This module defines custom error types for the IAM project.
+
 use thiserror::Error;
 
 /// Custom error types for the application.

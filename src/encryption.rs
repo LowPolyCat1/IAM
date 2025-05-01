@@ -1,3 +1,7 @@
+//! src/encryption.rs
+//!
+//! This module provides encryption and decryption functionalities using the ChaCha20Poly1305 algorithm.
+
 use base64::{engine::general_purpose, Engine as base64Engine};
 use chacha20poly1305::{
     aead::{Aead, KeyInit},
@@ -10,10 +14,13 @@ use thiserror::Error;
 
 use crate::errors::custom_errors::CustomError;
 
+/// Represents encryption-related errors.
 #[derive(Error, Debug)]
 pub enum EncryptionError {
+    /// An error occurred during encryption.
     #[error("Encryption error")]
     EncryptionError,
+    /// An error occurred during decryption.
     #[error("Decryption error")]
     DecryptionError,
 }
@@ -50,8 +57,11 @@ pub fn generate_key() -> Result<Key, CustomError> {
     Ok(*Key::from_slice(&key))
 }
 
+/// Represents encrypted data with its corresponding nonce.
 pub struct EncryptedData {
+    /// The encrypted ciphertext.
     pub ciphertext: Vec<u8>,
+    /// The nonce used for encryption.
     pub nonce: Nonce,
 }
 
@@ -93,6 +103,7 @@ pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, E
     Ok(decrypted_data)
 }
 
+/// Generates a new nonce (number used once) for encryption.
 fn generate_nonce() -> Nonce {
     let mut nonce = [0u8; 12];
     // let mut rng = OsRng::new().expect("Failed to get OS random number generator");

@@ -1,3 +1,7 @@
+//! src/lib.rs
+//!
+//! This is the main library module for the IAM project. It defines and exports other modules.
+
 #[cfg(test)]
 pub mod tests;
 

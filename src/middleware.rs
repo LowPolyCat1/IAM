@@ -1,3 +1,7 @@
+//! src/middleware.rs
+//!
+//! This module provides authentication middleware for Actix Web applications.
+
 use crate::jwt::{extract_user_id_from_jwt, validate_jwt};
 use actix_web::dev::Transform;
 use actix_web::{
@@ -12,6 +16,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use tracing::info;
 
+/// Authentication middleware that checks for a valid JWT in the request header.
 pub struct AuthenticationMiddleware<S> {
     service: Rc<S>,
 }
@@ -98,6 +103,7 @@ where
     }
 }
 
+/// Factory for creating `AuthenticationMiddleware` instances.
 pub struct AuthenticationMiddlewareFactory;
 
 impl AuthenticationMiddlewareFactory {

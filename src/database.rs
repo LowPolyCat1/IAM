@@ -1,3 +1,7 @@
+//! src/database.rs
+//!
+//! This module handles database interactions for the IAM project, using SurrealDB.
+
 use crate::encryption::{encrypt_with_random_nonce, generate_key};
 use crate::hashing::{hash_random_salt, verify_password};
 
@@ -46,9 +50,20 @@ use crate::errors::custom_errors::CustomError;
 impl Database {
     /// Creates a new database connection.
     ///
+    /// This function initializes a connection to the SurrealDB database using the path, namespace,
+    /// and database name specified in the environment variables. It also defines a unique index
+    /// on the `users` table for the `id` field.
+    ///
     /// # Returns
     ///
     /// A `Result` containing the new database connection or an error if the connection fails.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CustomError` if:
+    /// - The `DATABASE_PATH`, `DATABASE_NAMESPACE`, or `DATABASE_NAME` environment variables are not set.
+    /// - The connection to the database fails.
+    /// - Defining the unique index on the `users` table fails.
     pub async fn new() -> Result<Self, crate::errors::custom_errors::CustomError> {
         // Get the database path from the environment variables.
         let database_path = match var("DATABASE_PATH") {
@@ -91,6 +106,9 @@ impl Database {
 
     /// Registers a new user in the database.
     ///
+    /// This function takes user details as input, encrypts sensitive information, hashes the password,
+    /// and stores the user data in the database.
+    ///
     /// # Arguments
     ///
     /// * `firstname` - The user's first name.
@@ -102,6 +120,14 @@ impl Database {
     /// # Returns
     ///
     /// A `Result` containing a boolean indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CustomError` if:
+    /// - A user with the given email already exists.
+    /// - Encryption fails.
+    /// - Hashing the password fails.
+    /// - Creating the user in the database fails.
     pub async fn register(
         &self,
         firstname: String,
@@ -198,6 +224,9 @@ impl Database {
 
     /// Authenticates a user.
     ///
+    /// This function authenticates a user by verifying the provided email and password against the
+    /// stored user data in the database.
+    ///
     /// # Arguments
     ///
     /// * `email` - The user's email address.
@@ -206,6 +235,12 @@ impl Database {
     /// # Returns
     ///
     /// A `Result` containing the user's data or a `CustomError` if authentication fails.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CustomError` if:
+    /// - The user is not found.
+    /// - The password is invalid.
     pub async fn authenticate_user(
         &self,
         email: String,
@@ -241,6 +276,8 @@ impl Database {
 
     /// Changes the username of a user.
     ///
+    /// This function updates the username of an existing user in the database.
+    ///
     /// # Arguments
     ///
     /// * `user_id` - The ID of the user to update.
@@ -249,6 +286,11 @@ impl Database {
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CustomError` if:
+    /// - The update operation fails.
     pub async fn change_username(
         &self,
         user_id: String,
@@ -269,6 +311,8 @@ impl Database {
 
     /// Changes the password of a user.
     ///
+    /// This function updates the password of an existing user in the database.
+    ///
     /// # Arguments
     ///
     /// * `user_id` - The ID of the user to update.
@@ -277,6 +321,11 @@ impl Database {
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `CustomError` if:
+    /// - The update operation fails.
     pub async fn change_password(
         &self,
         user_id: String,

@@ -1,9 +1,14 @@
+//! src/server.rs
+//!
+//! This module defines the Actix Web server and its routes for the IAM project.
+
 use crate::database::Database;
 use crate::errors::custom_errors::CustomError;
 use crate::middleware::AuthenticationMiddlewareFactory;
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::HttpRequest;
 use actix_web::{get, post, web, App, HttpMessage, HttpResponse, Responder};
+use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
@@ -34,12 +39,14 @@ struct RegisterRequest {
     email: String,
 }
 
+/// Struct representing the change username request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct ChangeUsernameRequest {
     #[validate(length(min = 1, message = "Username is required"))]
     username: String,
 }
 
+/// Struct representing the change password request body
 #[derive(Debug, Deserialize, Serialize, Validate)]
 struct ChangePasswordRequest {
     #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
@@ -341,6 +348,11 @@ async fn ping(req: HttpRequest) -> impl Responder {
     format!("pong from user: {}", user_id)
 }
 
+/// Debug route.
+///
+/// # Returns
+///
+/// A `Result` containing the user ID from the token.
 #[get("/debug")]
 async fn debug(req: HttpRequest) -> impl Responder {
     let user_id = req

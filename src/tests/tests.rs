@@ -1,3 +1,7 @@
+//! src/tests/tests.rs
+//!
+//! This module contains integration tests for the IAM project.
+
 #[cfg(test)]
 mod tests {
     use crate::encryption::{decrypt_with_nonce, encrypt_with_random_nonce, generate_key};

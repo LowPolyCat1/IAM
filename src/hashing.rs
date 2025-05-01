@@ -1,3 +1,7 @@
+//! src/hashing.rs
+//!
+//! This module provides password hashing and verification functionalities using the Argon2id algorithm.
+
 use argon2::{
     password_hash::{
         rand_core::OsRng, Error as Argon2Error, PasswordHash, PasswordHasher, PasswordVerifier,
