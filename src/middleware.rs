@@ -26,6 +26,11 @@ where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     B: 'static,
 {
+    /// Creates a new `AuthenticationMiddleware` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `service` - The service to wrap with authentication.
     pub fn new(service: Rc<S>) -> Self {
         AuthenticationMiddleware { service }
     }
@@ -42,6 +47,11 @@ where
 
     forward_ready!(service);
 
+    /// Processes the service request and performs authentication.
+    ///
+    /// # Arguments
+    ///
+    /// * `req` - The service request to process.
     fn call(&self, req: ServiceRequest) -> Self::Future {
         // Skip authentication for OPTIONS requests or specific routes
         if *req.method() == Method::OPTIONS
@@ -108,6 +118,7 @@ where
 pub struct AuthenticationMiddlewareFactory;
 
 impl AuthenticationMiddlewareFactory {
+    /// Creates a new `AuthenticationMiddlewareFactory` instance.
     pub fn new() -> Self {
         AuthenticationMiddlewareFactory
     }
@@ -124,6 +135,11 @@ where
     type Transform = AuthenticationMiddleware<S>;
     type Future = std::future::Ready<Result<Self::Transform, Self::InitError>>;
 
+    /// Creates a new `AuthenticationMiddleware` instance for each service.
+    ///
+    /// # Arguments
+    ///
+    /// * `service` - The service to wrap with authentication.
     fn new_transform(&self, service: S) -> Self::Future {
         std::future::ready(Ok(AuthenticationMiddleware::new(Rc::new(service))))
     }
