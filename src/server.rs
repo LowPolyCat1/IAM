@@ -1,6 +1,13 @@
+//! src/server.rs
+//!
+//! This module defines the Actix Web server and its routes for the IAM project.
+
 use crate::database::Database;
 use crate::errors::custom_errors::CustomError;
-use actix_web::{self, get, post, web, App, HttpResponse, Responder};
+use crate::middleware::AuthenticationMiddlewareFactory;
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::HttpRequest;
+use actix_web::{get, post, web, App, HttpMessage, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
@@ -31,6 +38,20 @@ struct RegisterRequest {
     email: String,
 }
 
+/// Struct representing the change username request body
+#[derive(Debug, Deserialize, Serialize, Validate)]
+struct ChangeUsernameRequest {
+    #[validate(length(min = 1, message = "Username is required"))]
+    username: String,
+}
+
+/// Struct representing the change password request body
+#[derive(Debug, Deserialize, Serialize, Validate)]
+struct ChangePasswordRequest {
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    password: String,
+}
+
 /// Application state shared across all routes
 #[derive(Clone)]
 pub struct AppState {
@@ -48,7 +69,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let rolling = tracing_appender::rolling::Builder::new()
         .rotation(Rotation::DAILY)
         .filename_suffix("log")
-        .build("D:/VSC/Rust/Projects/current/IAM/logs")?;
+        .build("D:/VSC/Rust/Projects/current/IAM/logs")?; // Only here until I get logging middleware to work
     tracing_subscriber::fmt().with_writer(rolling).init();
     tracing::info!("Starting Programm!");
 
@@ -77,16 +98,35 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
     let server_port = parse_server_port(&server_port_string)?;
     tracing::info!("Setting up server");
 
+    let governor_conf = match GovernorConfigBuilder::default()
+        .requests_per_second(2)
+        .seconds_per_request(1)
+        .burst_size(10)
+        .finish()
+    {
+        Some(governor) => governor,
+        None => {
+            return Err(Box::new(CustomError::GovernorCreationError(
+                "Unknown".to_string(),
+            )));
+        }
+    };
+
     // Create the Actix Web server
     actix_web::HttpServer::new(move || {
         App::new()
             // Share the application state with all routes
             .app_data(web::Data::new(app_state.clone()))
+            .wrap(Governor::new(&governor_conf))
+            .wrap(AuthenticationMiddlewareFactory::new())
             // Register the ping route
             .service(ping)
             // Register the register route
             .service(register)
             .service(authenticate_user)
+            .service(debug)
+            .service(change_username)
+            .service(change_password)
     })
     // Bind the server to the specified IP address and port
     .bind((server_ip, server_port))?
@@ -138,7 +178,7 @@ fn get_server_port_string() -> Result<String, CustomError> {
 ///
 /// # Returns
 ///
-/// A `Result` indicating success or failure.
+/// A `Result` containing the server IP address or a `CustomError` if an error occurs.
 fn load_dotenv() -> Result<(), CustomError> {
     match dotenvy::dotenv() {
         Ok(pathbuf) => {
@@ -188,8 +228,20 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
 ///
 /// A `Result` indicating success or failure.
 #[post("/register")]
-async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) -> impl Responder {
+async fn register(
+    req: web::Json<RegisterRequest>,
+    data: web::Data<AppState>,
+    http_req: HttpRequest,
+) -> impl Responder {
     tracing::info!("Registering user");
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    tracing::info!("User ID from token: {}", user_id);
+
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
         tracing::warn!("Validation error: {:?}", validation_errors);
@@ -227,13 +279,11 @@ async fn register(req: web::Json<RegisterRequest>, data: web::Data<AppState>) ->
     }
 }
 
-/// Authenticates a user
 /// Authenticates a user.
 ///
 /// # Arguments
 ///
 /// * `req` - The login request.
-/// * `data` - The application state.
 ///
 /// # Returns
 ///
@@ -259,9 +309,17 @@ async fn authenticate_user(
 
     // Authenticate the user
     match db.authenticate_user(email, password).await {
-        Ok(_user) => {
+        Ok(user) => {
             tracing::info!("User authenticated successfully");
-            HttpResponse::Ok().json(json!({"success": true}))
+            // Generate JWT
+            match crate::jwt::generate_jwt(user.id.to_string()) {
+                Ok(token) => HttpResponse::Ok().json(json!({"success": true, "token": token})),
+                Err(error) => {
+                    tracing::error!("Error generating JWT: {}", error);
+                    HttpResponse::InternalServerError()
+                        .json(json!({"success": false, "error": "Failed to generate token"}))
+                }
+            }
         }
         Err(error) => {
             tracing::error!("Error authenticating user: {}", error);
@@ -280,6 +338,96 @@ async fn authenticate_user(
 ///
 /// A `Result` containing the string "pong".
 #[get("/ping")]
-async fn ping() -> impl Responder {
-    "pong"
+async fn ping(req: HttpRequest) -> impl Responder {
+    let user_id = req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+    format!("pong from user: {}", user_id)
+}
+
+/// Debug route.
+///
+/// # Returns
+///
+/// A `Result` containing the user ID from the token.
+#[get("/debug")]
+async fn debug(req: HttpRequest) -> impl Responder {
+    let user_id = req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+    format!("Debug: User ID from token: {}", user_id)
+}
+
+/// Changes the Username of a user.
+///
+/// # Arguments
+///
+/// * `req` - The change username request.
+///
+/// * `http_req` - The http request.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
+#[post("/change_username")]
+async fn change_username(
+    http_req: HttpRequest,
+    req: web::Json<ChangeUsernameRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+    let new_username = req.0.username;
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    match data.db.change_username(user_id, new_username).await {
+        Ok(_) => HttpResponse::Ok().json("Successfully changed username"),
+        Err(_error) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+/// Changes the Password of a user.
+///
+/// # Arguments
+///
+/// * `req` - The change username request.
+///
+/// * `http_req` - The http request.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
+#[post("/change_password")]
+async fn change_password(
+    http_req: HttpRequest,
+    req: web::Json<ChangePasswordRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    // Validate the request body
+    if let Err(validation_errors) = req.0.validate() {
+        tracing::warn!("Validation error: {:?}", validation_errors);
+        return HttpResponse::BadRequest().json(validation_errors);
+    }
+    let new_password = req.0.password;
+    let user_id = http_req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    match data.db.change_password(user_id, new_password).await {
+        Ok(_) => HttpResponse::Ok().json("Successfully changed password"),
+        Err(_error) => HttpResponse::InternalServerError().finish(),
+    }
 }

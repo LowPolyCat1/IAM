@@ -1,3 +1,7 @@
+//! src/encryption.rs
+//!
+//! This module provides encryption and decryption functionalities using the ChaCha20Poly1305 algorithm.
+
 use base64::{engine::general_purpose, Engine as base64Engine};
 use chacha20poly1305::{
     aead::{Aead, KeyInit},
@@ -6,17 +10,8 @@ use chacha20poly1305::{
 use dotenvy::var;
 use rand::rng;
 use rand::RngCore;
-use thiserror::Error;
 
 use crate::errors::custom_errors::CustomError;
-
-#[derive(Error, Debug)]
-pub enum EncryptionError {
-    #[error("Encryption error")]
-    EncryptionError,
-    #[error("Decryption error")]
-    DecryptionError,
-}
 
 /// Generates a new encryption key.
 ///
@@ -50,8 +45,11 @@ pub fn generate_key() -> Result<Key, CustomError> {
     Ok(*Key::from_slice(&key))
 }
 
+/// Represents encrypted data with its corresponding nonce.
 pub struct EncryptedData {
+    /// The encrypted ciphertext.
     pub ciphertext: Vec<u8>,
+    /// The nonce used for encryption.
     pub nonce: Nonce,
 }
 
@@ -65,12 +63,12 @@ pub struct EncryptedData {
 /// # Returns
 ///
 /// A `Result` containing the encrypted data or an `EncryptionError` if an error occurs.
-pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionError> {
+pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, CustomError> {
     let nonce = generate_nonce();
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
     let ciphertext = aead
         .encrypt(&nonce, plaintext)
-        .map_err(|_e| EncryptionError::EncryptionError)?;
+        .map_err(|_e| CustomError::EncryptionError)?;
     Ok(EncryptedData { ciphertext, nonce })
 }
 
@@ -85,14 +83,15 @@ pub fn encrypt(key: &Key, plaintext: &[u8]) -> Result<EncryptedData, EncryptionE
 /// # Returns
 ///
 /// A `Result` containing the decrypted data or an `EncryptionError` if an error occurs.
-pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, EncryptionError> {
+pub fn decrypt(key: &Key, ciphertext: &[u8], nonce: &Nonce) -> Result<Vec<u8>, CustomError> {
     let aead = ChaCha20Poly1305::new_from_slice(key.as_slice()).expect("Invalid key length");
     let decrypted_data = aead
         .decrypt(nonce, ciphertext)
-        .map_err(|_e| EncryptionError::DecryptionError)?;
+        .map_err(|_e| CustomError::DecryptionError)?;
     Ok(decrypted_data)
 }
 
+/// Generates a new nonce (number used once) for encryption.
 fn generate_nonce() -> Nonce {
     let mut nonce = [0u8; 12];
     // let mut rng = OsRng::new().expect("Failed to get OS random number generator");
@@ -113,7 +112,7 @@ fn generate_nonce() -> Nonce {
 pub fn encrypt_with_random_nonce(
     key_bytes: &[u8; 32],
     plaintext: &str,
-) -> Result<String, EncryptionError> {
+) -> Result<String, CustomError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
 
     // Generate random nonce
@@ -125,7 +124,7 @@ pub fn encrypt_with_random_nonce(
     // Encrypt
     let ciphertext = cipher
         .encrypt(nonce, plaintext.as_bytes())
-        .map_err(|_| EncryptionError::EncryptionError)?;
+        .map_err(|_| CustomError::EncryptionError)?;
 
     // Combine nonce + ciphertext
     let mut combined = Vec::new();
@@ -149,13 +148,13 @@ pub fn encrypt_with_random_nonce(
 pub fn decrypt_with_nonce(
     key_bytes: &[u8; 32],
     combined_base64: &str,
-) -> Result<String, EncryptionError> {
+) -> Result<String, CustomError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(key_bytes));
 
     // Decode from Base64
     let combined = general_purpose::STANDARD
         .decode(combined_base64)
-        .map_err(|_| EncryptionError::DecryptionError)?;
+        .map_err(|_| CustomError::DecryptionError)?;
 
     // Split into nonce + ciphertext
     let (nonce_bytes, ciphertext) = combined.split_at(12);
@@ -164,7 +163,7 @@ pub fn decrypt_with_nonce(
     // Decrypt
     let plaintext_bytes = cipher
         .decrypt(nonce, ciphertext)
-        .map_err(|_| EncryptionError::DecryptionError)?;
+        .map_err(|_| CustomError::DecryptionError)?;
 
-    String::from_utf8(plaintext_bytes).map_err(|_| EncryptionError::DecryptionError)
+    String::from_utf8(plaintext_bytes).map_err(|_| CustomError::DecryptionError)
 }

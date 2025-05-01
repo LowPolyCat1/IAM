@@ -194,16 +194,19 @@ _For more examples, please refer to the [Documentation]()_
 * [ ] API endpoints
   * [x] /register
   * [x] /login
-  * [ ] /change_username
+  * [x] /change_username
   * [ ] /change_email
-  * [ ] /change_password
+  * [x] /change_password
   * [ ] /reset_password
 * [x] Portability via Docker
-* [ ] JWT Token authentication
-* [ ] Rate limiting
+* [x] JWT Token authentication
+* [x] Rate limiting
+* [ ] Using a Cryptographically secure RNG
+
+##### Maybes
+
 * [ ] HTTPS everywhere for data in transit
 * [ ] Implementing database Migration service
-* [ ] Using a Cryptographically secure RNG
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 

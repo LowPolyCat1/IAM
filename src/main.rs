@@ -1,3 +1,7 @@
+//! src/main.rs
+//!
+//! This is the main entry point for the IAM project.
+
 use iam::server::start;
 
 #[tokio::main]

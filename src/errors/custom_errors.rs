@@ -1,3 +1,7 @@
+//! src/errors/custom_errors.rs
+//!
+//! This module defines custom error types for the IAM project.
+
 use thiserror::Error;
 
 /// Custom error types for the application.
@@ -15,6 +19,9 @@ pub enum CustomError {
     /// Represents an encryption error.
     #[error("Encryption error")]
     EncryptionError,
+    /// Represents an decryption error.
+    #[error("Decryption error")]
+    DecryptionError,
     /// Represents a database error.
     #[error("Database error: {0}")]
     DatabaseError(String),
@@ -38,6 +45,8 @@ pub enum CustomError {
     EnvironmentVariableError(String),
     #[error("Environment variable error: {0}")]
     ParsingServerPortError(String),
+    #[error("Environment variable error: {0}")]
+    GovernorCreationError(String),
 }
 
 impl From<surrealdb::Error> for CustomError {
