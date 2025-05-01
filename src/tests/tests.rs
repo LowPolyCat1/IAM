@@ -71,4 +71,74 @@ mod tests {
         let extracted_user_id = extract_user_id_from_jwt(&token).unwrap();
         assert_eq!(extracted_user_id, user_id);
     }
+
+    mod test_middleware {
+        use crate::jwt::generate_jwt;
+        use crate::middleware::AuthenticationMiddlewareFactory;
+        use actix_web::http::header;
+        use actix_web::{http::StatusCode, test, web, App, HttpResponse};
+
+        async fn test_route() -> HttpResponse {
+            HttpResponse::Ok().finish()
+        }
+
+        #[actix_web::test]
+        async fn test_authentication_middleware_valid_token() {
+            dotenvy::dotenv().ok();
+            let user_id = "test_user";
+            let token = generate_jwt(user_id.to_string()).unwrap();
+
+            let app = test::init_service(
+                App::new()
+                    .wrap(AuthenticationMiddlewareFactory::new())
+                    .route("/test", web::get().to(test_route)),
+            )
+            .await;
+
+            let req = test::TestRequest::get()
+                .uri("/test")
+                .insert_header((header::AUTHORIZATION, format!("Bearer {}", token)))
+                .to_request();
+
+            let resp = test::call_service(&app, req).await;
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+
+        #[actix_web::test]
+        async fn test_authentication_middleware_invalid_token() {
+            dotenvy::dotenv().ok();
+
+            let app = test::init_service(
+                App::new()
+                    .wrap(AuthenticationMiddlewareFactory::new())
+                    .route("/test", web::get().to(test_route)),
+            )
+            .await;
+
+            let req = test::TestRequest::get()
+                .uri("/test")
+                .insert_header((header::AUTHORIZATION, "Bearer invalid_token".to_string()))
+                .to_request();
+
+            let resp = test::call_service(&app, req).await;
+            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        }
+
+        #[actix_web::test]
+        async fn test_authentication_middleware_missing_token() {
+            dotenvy::dotenv().ok();
+
+            let app = test::init_service(
+                App::new()
+                    .wrap(AuthenticationMiddlewareFactory::new())
+                    .route("/test", web::get().to(test_route)),
+            )
+            .await;
+
+            let req = test::TestRequest::get().uri("/test").to_request();
+
+            let resp = test::call_service(&app, req).await;
+            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        }
+    }
 }
