@@ -13,15 +13,24 @@ use surrealdb::{
 };
 use uuid::Uuid;
 
+/// Represents a user in the database.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
+    /// The user's ID.
     pub id: surrealdb::sql::Thing,
+    /// The user's encrypted first name.
     pub encrypted_firstname: String,
+    /// The user's encrypted last name.
     pub encrypted_lastname: String,
+    /// The user's username.
     pub username: String,
+    /// The user's password hash.
     pub password_hash: String,
+    /// The user's encrypted email.
     pub encrypted_email: String,
+    /// The user's email address.
     pub email: String,
+    /// The user's creation timestamp.
     pub created_at: String,
 }
 
@@ -230,6 +239,16 @@ impl Database {
         }
     }
 
+    /// Changes the username of a user.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - The ID of the user to update.
+    /// * `new_username` - The new username.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     pub async fn change_username(
         &self,
         user_id: String,
@@ -248,6 +267,16 @@ impl Database {
         Ok(())
     }
 
+    /// Changes the password of a user.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - The ID of the user to update.
+    /// * `new_password` - The new password.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     pub async fn change_password(
         &self,
         user_id: String,
