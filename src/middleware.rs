@@ -114,7 +114,7 @@ impl AuthenticationMiddlewareFactory {
 
 impl Default for AuthenticationMiddlewareFactory {
     fn default() -> Self {
-        Self::new()
+        Self {}
     }
 }
 
