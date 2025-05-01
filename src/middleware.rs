@@ -104,17 +104,12 @@ where
 }
 
 /// Factory for creating `AuthenticationMiddleware` instances.
+#[derive(Default)]
 pub struct AuthenticationMiddlewareFactory;
 
 impl AuthenticationMiddlewareFactory {
     pub fn new() -> Self {
         AuthenticationMiddlewareFactory
-    }
-}
-
-impl Default for AuthenticationMiddlewareFactory {
-    fn default() -> Self {
-        Self {}
     }
 }
 
