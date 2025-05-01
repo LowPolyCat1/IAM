@@ -4,13 +4,19 @@
 
 use std::env;
 
+const ENCRYPTION_KEY_ENV: &str = "ENCRYPTION_KEY";
+const ENCRYPTION_KEY_ENV_VAR: &str = "12345678901234567890123456789012";
+
+const JWT_SECRET_ENV: &str = "JWT_SECRET";
+const JWT_SECRET_ENV_VAR: &str = "secret";
+
 fn setup() {
     // Load environment variables from GitHub Actions environment
-    if env::var("ENCRYPTION_KEY").is_err() {
-        env::set_var("ENCRYPTION_KEY", "12345678901234567890123456789012");
+    if env::var(ENCRYPTION_KEY_ENV).is_err() {
+        env::set_var(ENCRYPTION_KEY_ENV, ENCRYPTION_KEY_ENV_VAR);
     }
-    if env::var("JWT_SECRET").is_err() {
-        env::set_var("JWT_SECRET", "secret");
+    if env::var(JWT_SECRET_ENV).is_err() {
+        env::set_var(JWT_SECRET_ENV, JWT_SECRET_ENV_VAR);
     }
 }
 
