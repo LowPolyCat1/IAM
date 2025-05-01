@@ -51,8 +51,8 @@ where
 
         if let Some(auth_header) = auth_header {
             if let Ok(auth_value) = auth_header.to_str() {
-                if auth_value.starts_with("Bearer ") {
-                    let token = auth_value[7..].trim(); // Remove "Bearer " prefix
+                if let Some(token) = auth_value.strip_prefix("Bearer ") {
+                    let token = token.trim();
 
                     match validate_jwt(token) {
                         Ok(_) => {
@@ -61,33 +61,33 @@ where
                                     info!("Authenticated user with ID: {}", user_id);
                                     req.extensions_mut().insert(user_id.clone()); // Store user_id in extensions
                                     let fut = self.service.call(req);
-                                    return Box::pin(async move {
+                                    Box::pin(async move {
                                         let res = fut.await?;
                                         Ok(res)
-                                    });
+                                    })
                                 }
                                 Err(e) => {
                                     tracing::error!("Failed to extract user ID: {}", e);
-                                    return Box::pin(err(ErrorUnauthorized("Invalid token")));
+                                    Box::pin(err(ErrorUnauthorized("Invalid token")))
                                 }
                             }
                         }
                         Err(e) => {
                             tracing::error!("Invalid token: {}", e);
-                            return Box::pin(err(ErrorUnauthorized("Invalid token")));
+                            Box::pin(err(ErrorUnauthorized("Invalid token")))
                         }
                     }
                 } else {
                     tracing::error!("Invalid authorization format");
-                    return Box::pin(err(ErrorUnauthorized("Invalid authorization format")));
+                    Box::pin(err(ErrorUnauthorized("Invalid authorization format")))
                 }
             } else {
                 tracing::error!("Invalid authorization header value");
-                return Box::pin(err(ErrorUnauthorized("Invalid authorization header value")));
+                Box::pin(err(ErrorUnauthorized("Invalid authorization header value")))
             }
         } else {
             tracing::error!("Missing authorization header");
-            return Box::pin(err(ErrorUnauthorized("Missing authorization header")));
+            Box::pin(err(ErrorUnauthorized("Missing authorization header")))
         }
     }
 }
@@ -97,6 +97,12 @@ pub struct AuthenticationMiddlewareFactory;
 impl AuthenticationMiddlewareFactory {
     pub fn new() -> Self {
         AuthenticationMiddlewareFactory
+    }
+}
+
+impl Default for AuthenticationMiddlewareFactory {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
