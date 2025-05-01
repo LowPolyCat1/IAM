@@ -3,15 +3,11 @@ use actix_web::dev::Transform;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse},
     error::ErrorUnauthorized,
-    http::{
-        header::{HeaderName, HeaderValue},
-        Method,
-    },
+    http::Method,
     Error, HttpMessage,
 };
-use futures::future::{err, ok, Ready};
-use futures::FutureExt;
-use std::future::{Future, Ready as StdReady};
+use futures::future::err;
+use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 use tracing::info;
@@ -42,8 +38,12 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        // Skip authentication for OPTIONS requests
-        if *req.method() == Method::OPTIONS {
+        // Skip authentication for OPTIONS requests or specific routes
+        if *req.method() == Method::OPTIONS
+            || req.path() == "/register"
+            || req.path() == "/login"
+            || req.path() == "/ping"
+        {
             return Box::pin(self.service.call(req));
         }
 

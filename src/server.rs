@@ -106,6 +106,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             // Register the register route
             .service(register)
             .service(authenticate_user)
+            .service(debug)
     })
     // Bind the server to the specified IP address and port
     .bind((server_ip, server_port))?
@@ -325,4 +326,14 @@ async fn ping(req: HttpRequest) -> impl Responder {
         .cloned()
         .unwrap_or_else(|| "Unknown".to_string());
     format!("pong from user: {}", user_id)
+}
+
+#[get("/debug")]
+async fn debug(req: HttpRequest) -> impl Responder {
+    let user_id = req
+        .extensions()
+        .get::<String>()
+        .cloned()
+        .unwrap_or_else(|| "Unknown".to_string());
+    format!("Debug: User ID from token: {}", user_id)
 }
