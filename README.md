@@ -191,22 +191,27 @@ _For more examples, please refer to the [Documentation]()_
 * [x] Secure config management using .env
 * [x] Password hashing using Argon2
 * [x] Data encryption using ChaCha20-Poly130
-* [ ] API endpoints
+* [x] API endpoints
   * [x] /register
   * [x] /login
   * [x] /change_username
-  * [ ] /change_email
   * [x] /change_password
-  * [ ] /reset_password
 * [x] Portability via Docker
 * [x] JWT Token authentication
 * [x] Rate limiting
-* [ ] Using a Cryptographically secure RNG
 
 ##### Maybes
 
 * [ ] HTTPS everywhere for data in transit
-* [ ] Implementing database Migration service
+* [ ] Database Migration service
+* [ ] Kubernetes autoscaling
+  * [ ] Containerized Application
+  * [ ] Distributed Database
+* [ ] Using a Cryptographically secure RNG
+* [ ] 2FA
+* [ ] API endpoints (2FA)
+  * [ ] /reset_password
+  * [ ] /change_email
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
