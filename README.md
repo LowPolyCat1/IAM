@@ -200,18 +200,19 @@ _For more examples, please refer to the [Documentation]()_
 * [x] JWT Token authentication
 * [x] Rate limiting
 
-##### Maybes
+### Maybes
 
 * [ ] HTTPS everywhere for data in transit
-* [ ] Database Migration service
 * [ ] Kubernetes autoscaling
-  * [ ] Containerized Application
   * [ ] Distributed Database
+    * [ ] Database Migration service
+  * [ ] Separated Application
 * [ ] Using a Cryptographically secure RNG
-* [ ] 2FA
-* [ ] API endpoints (2FA)
-  * [ ] /reset_password
-  * [ ] /change_email
+* [ ] Email integration
+  * [ ] 2FA
+  * [ ] API endpoints (2FA)
+    * [ ] /reset_password
+    * [ ] /change_email
 
 See the [open issues](https://github.com/lowpolycat1/IAM/issues) for a full list of proposed features (and known issues).
 
