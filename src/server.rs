@@ -123,7 +123,7 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             .service(ping)
             // Register the register route
             .service(register)
-            .service(authenticate_user)
+            .service(login)
             .service(debug)
             .service(change_username)
             .service(change_password)
@@ -234,6 +234,7 @@ async fn register(
     http_req: HttpRequest,
 ) -> impl Responder {
     tracing::info!("Registering user");
+    tracing::info!("{:?}", req.0);
     let user_id = http_req
         .extensions()
         .get::<String>()
@@ -289,10 +290,7 @@ async fn register(
 ///
 /// A `Result` indicating success or failure.
 #[post("/login")]
-async fn authenticate_user(
-    req: web::Json<LoginRequest>,
-    data: web::Data<AppState>,
-) -> impl Responder {
+async fn login(req: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
     tracing::info!("Authenticating user");
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
