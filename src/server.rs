@@ -119,12 +119,8 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             .app_data(web::Data::new(app_state.clone()))
             .wrap(Governor::new(&governor_conf))
             .wrap(AuthenticationMiddlewareFactory::new())
-            // Register the ping route
-            .service(ping)
-            // Register the register route
             .service(register)
             .service(login)
-            .service(debug)
             .service(change_username)
             .service(change_password)
     })
@@ -216,7 +212,6 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
     }
 }
 
-/// Registers a new user
 /// Registers a new user.
 ///
 /// # Arguments
@@ -328,36 +323,6 @@ async fn login(req: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl 
             }
         }
     }
-}
-
-/// Pings the server.
-///
-/// # Returns
-///
-/// A `Result` containing the string "pong".
-#[get("/ping")]
-async fn ping(req: HttpRequest) -> impl Responder {
-    let user_id = req
-        .extensions()
-        .get::<String>()
-        .cloned()
-        .unwrap_or_else(|| "Unknown".to_string());
-    format!("pong from user: {}", user_id)
-}
-
-/// Debug route.
-///
-/// # Returns
-///
-/// A `Result` containing the user ID from the token.
-#[get("/debug")]
-async fn debug(req: HttpRequest) -> impl Responder {
-    let user_id = req
-        .extensions()
-        .get::<String>()
-        .cloned()
-        .unwrap_or_else(|| "Unknown".to_string());
-    format!("Debug: User ID from token: {}", user_id)
 }
 
 /// Changes the Username of a user.
