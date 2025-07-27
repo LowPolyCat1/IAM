@@ -7,7 +7,7 @@ use crate::errors::custom_errors::CustomError;
 use crate::middleware::AuthenticationMiddlewareFactory;
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::HttpRequest;
-use actix_web::{get, post, web, App, HttpMessage, HttpResponse, Responder};
+use actix_web::{post, web, App, HttpMessage, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env::var;
@@ -119,12 +119,8 @@ pub async fn start() -> Result<(), Box<dyn std::error::Error>> {
             .app_data(web::Data::new(app_state.clone()))
             .wrap(Governor::new(&governor_conf))
             .wrap(AuthenticationMiddlewareFactory::new())
-            // Register the ping route
-            .service(ping)
-            // Register the register route
             .service(register)
-            .service(authenticate_user)
-            .service(debug)
+            .service(login)
             .service(change_username)
             .service(change_password)
     })
@@ -216,7 +212,6 @@ fn parse_server_port(server_port_string: &str) -> Result<u16, CustomError> {
     }
 }
 
-/// Registers a new user
 /// Registers a new user.
 ///
 /// # Arguments
@@ -234,6 +229,7 @@ async fn register(
     http_req: HttpRequest,
 ) -> impl Responder {
     tracing::info!("Registering user");
+    tracing::info!("{:?}", req.0);
     let user_id = http_req
         .extensions()
         .get::<String>()
@@ -289,10 +285,7 @@ async fn register(
 ///
 /// A `Result` indicating success or failure.
 #[post("/login")]
-async fn authenticate_user(
-    req: web::Json<LoginRequest>,
-    data: web::Data<AppState>,
-) -> impl Responder {
+async fn login(req: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
     tracing::info!("Authenticating user");
     // Validate the request body
     if let Err(validation_errors) = req.0.validate() {
@@ -330,36 +323,6 @@ async fn authenticate_user(
             }
         }
     }
-}
-
-/// Pings the server.
-///
-/// # Returns
-///
-/// A `Result` containing the string "pong".
-#[get("/ping")]
-async fn ping(req: HttpRequest) -> impl Responder {
-    let user_id = req
-        .extensions()
-        .get::<String>()
-        .cloned()
-        .unwrap_or_else(|| "Unknown".to_string());
-    format!("pong from user: {}", user_id)
-}
-
-/// Debug route.
-///
-/// # Returns
-///
-/// A `Result` containing the user ID from the token.
-#[get("/debug")]
-async fn debug(req: HttpRequest) -> impl Responder {
-    let user_id = req
-        .extensions()
-        .get::<String>()
-        .cloned()
-        .unwrap_or_else(|| "Unknown".to_string());
-    format!("Debug: User ID from token: {}", user_id)
 }
 
 /// Changes the Username of a user.

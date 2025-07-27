@@ -1,8 +1,5 @@
-# Use a specific Rust image (consider bullseye or slim)
-FROM rust:bullseye
-
-ARG DOCKER_EXPOSED_PORT
-ENV DOCKER_EXPOSED_PORT=$DOCKER_EXPOSED_PORT
+# Stage 1: Build the application
+FROM rust:bullseye AS builder
 
 WORKDIR /app
 
@@ -15,7 +12,17 @@ RUN apt-get update && apt-get install -y clang-$LLVM_VER lldb-$LLVM_VER lld-$LLV
 
 RUN cargo build --release
 
-EXPOSE $DOCKER_EXPOSED_PORT
+# Stage 2: Create a smaller runtime image
+FROM debian:bullseye-slim
 
-# Set the command to run the application
-CMD ["cargo", "run", "--release"]
+WORKDIR /app
+
+COPY --from=builder /app/target/release/iam /app/iam
+COPY .env /app/.env
+
+ARG DOCKER_EXPOSED_PORT
+ENV PORT=$DOCKER_EXPOSED_PORT
+
+EXPOSE $PORT
+
+CMD ["/app/iam"]
